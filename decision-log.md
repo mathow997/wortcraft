@@ -223,3 +223,8 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     (y240–300, ladder or balloon to reach the first stone); betony patch
     yields 3, reveal burns one. Fixed two jump gaps that exceeded max jump
     range on the swarm field.
+
+34. **Phase 4: themes + detail.** Tallgrass reads as dusk meadow now (warm
+    wash, cattails, fallen log, fireflies, hawk) vs. bright meadow
+    (paddock, butterflies). Shed gains a charm chalkboard, stool, and
+    garlic braid; forest a stone circle and a perched owl.

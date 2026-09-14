@@ -138,6 +138,15 @@ function buildBeatDecor(theme,opts,H,Y0){
     }
     for(let i=0;i<10;i++) shroom(g,150+rng()*2300,470+rng()*10,0.8+rng()*0.8,rng()<0.5?C.terra:C.must);
     for(let i=0;i<24;i++){ g.fillStyle=C.honey; g.fillRect(rng()*W2,rng()*440,3,3); } // fireflies
+    // stone circle
+    [[2060,60],[2100,78],[2140,64],[2170,52],[2030,50]].forEach(([x,h])=>box(g,x,484-h,26,h,C.ash,false));
+    g.fillStyle=C.parch; g.beginPath(); g.ellipse(2100,480,40,8,0,0,7); g.fill();
+    g.strokeStyle=INK; g.lineWidth=2; g.stroke();
+    // owl on a branch
+    beam(g,2350,300,120,12);
+    g.fillStyle=C.night; g.beginPath(); g.ellipse(2400,284,12,16,0,0,7); g.fill();
+    g.beginPath(); g.arc(2400,272,9,0,7); g.fill();
+    g.fillStyle=C.honey; g.beginPath(); g.arc(2396,271,2.5,0,7); g.arc(2404,271,2.5,0,7); g.fill();
     box(g,0,484,W2,56,C.clay,false);                        // soil
     // chasm under the ghost path
     g.fillStyle=C.night; g.fillRect(600,360,800,180);
@@ -178,8 +187,7 @@ function buildBeatDecor(theme,opts,H,Y0){
     g.fillStyle=C.ash; g.beginPath(); g.ellipse(x,y,10+rng()*8,6,0,0,7); g.fill();
     g.strokeStyle=INK; g.lineWidth=2; g.stroke();
   }
-  if(opts.water){ // stream gap under the bridge
-    const wx=opts.water.x, ww=opts.water.w;
+  if(opts.water){ // stream gap under the bridge    const wx=opts.water.x, ww=opts.water.w;
     g.fillStyle=C.night; g.fillRect(wx,440,ww,100);
     g.fillStyle=C.water; g.fillRect(wx,492,ww,32);
     dash(g,wx+10,502,wx+ww-10,502,C.cream); dash(g,wx+20,514,wx+ww-30,514,C.cream);
@@ -204,6 +212,29 @@ function buildBeatDecor(theme,opts,H,Y0){
       g.beginPath(); g.moveTo(x-8,y-3); g.lineTo(x+8,y-3); g.stroke();
       g.fillStyle=C.water; g.fillRect(x-1,y-4,2,12);
     });
+    [[600,300],[900,240],[1900,260]].forEach(([x,y])=>{ // meadow butterflies
+      g.fillStyle=C.must; g.strokeStyle=INK; g.lineWidth=1.5;
+      g.beginPath(); g.moveTo(x,y); g.lineTo(x-9,y-7); g.lineTo(x-7,y+4); g.closePath(); g.fill(); g.stroke();
+      g.beginPath(); g.moveTo(x,y); g.lineTo(x+9,y-7); g.lineTo(x+7,y+4); g.closePath(); g.fill(); g.stroke();
+    });
+  }
+  if(tall){ // tallgrass dusk: warm low light, cattails, fallen log, fireflies
+    g.fillStyle='rgba(217,164,65,.10)'; g.fillRect(0,Y0,W2,540-Y0);
+    [[500],[1400],[2300]].forEach(([x])=>{
+      for(let i=0;i<4;i++){
+        const cx=x+i*14;
+        g.strokeStyle=C.moss; g.lineWidth=3;
+        g.beginPath(); g.moveTo(cx,470); g.lineTo(cx,410); g.stroke();
+        g.fillStyle=C.bark; g.fillRect(cx-4,388,8,24);
+        g.strokeStyle=INK; g.lineWidth=1.5; g.strokeRect(cx-4,388,8,24);
+      }
+    });
+    box(g,1660,452,180,22,C.bark); // fallen log
+    g.strokeStyle=INK; g.lineWidth=2;
+    g.beginPath(); g.ellipse(1660,463,8,11,0,0,7); g.stroke();
+    shroom(g,1710,452,1,C.terra); shroom(g,1780,452,0.9,C.must);
+    for(let i=0;i<10;i++){ g.fillStyle=C.honey; g.fillRect(200+rng()*2200,60+rng()*300,3,3); }
+    bird(g,1300,60,1.8);
   }
   return cv;
 }
@@ -286,6 +317,12 @@ function buildDecor(){
   shelfRow(g,640,-140,240,rng,6);
   shelfRow(g,1240,-120,300,rng,8);
   shelfRow(g,1290,300,270,rng,7);
+  // charm chalkboard
+  box(g,960,120,110,84,C.night);
+  g.fillStyle=C.cream; g.font='11px Georgia';
+  g.fillText('THE CHARM',968,138);
+  g.fillText('mugwort ?',968,156);
+  for(let i=0;i<9;i++){ g.fillRect(968+(i%5)*18,168+Math.floor(i/5)*16,3,10); }
   // gameplay jar platforms: brackets beneath each (boards drawn by gameplay)
   [[980,300,180],[1280,160,180],[1560,-20,140]].forEach(([x,y,w])=>{
     box(g,x+10,y+18,12,34,C.bark,false); box(g,x+w-22,y+18,12,34,C.bark,false);
@@ -317,6 +354,15 @@ function buildDecor(){
   bookStack(g,1450,408,3,rng);
   candle(g,1500,408,26);
   jar(g,1330,372,2,C.water,C.cream);
+  // stool by the bench + garlic braid under the shelf
+  box(g,1292,440,44,10,C.bark);
+  box(g,1296,450,8,34,C.clay,false); box(g,1324,450,8,34,C.clay,false);
+  g.strokeStyle=INK; g.lineWidth=2;
+  g.beginPath(); g.moveTo(700,240); g.lineTo(700,292); g.stroke();
+  [[-8,262],[8,268],[-6,280],[7,286],[0,298]].forEach(([dx,y])=>{
+    g.fillStyle=C.cream; g.beginPath(); g.ellipse(700+dx,y,7,9,0,0,7); g.fill();
+    g.strokeStyle=INK; g.lineWidth=1.5; g.stroke();
+  });
   // barrel, sack, bucket
   box(g,1568,420,52,64,C.clay);
   dash(g,1570,436,1618,436,C.bark); dash(g,1570,452,1618,452,C.bark); dash(g,1570,468,1618,468,C.bark);

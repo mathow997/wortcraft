@@ -89,9 +89,11 @@ its own before being combined with an earlier one.
     (ladder/balloon to reach, 3 picks per plant); soothing burns one per
     goat, or play a conjured flute for free. Timing/positioning puzzle with
     real teeth.
-3. **Meadow, further out** — Fennel. Time a crossing through a drifting
-   insect swarm over tall grass (obstacle-timing, light platforming).
-   Easy-Medium — first beat combining a spell with movement timing.
+3. **Meadow, further out** — Fennel. Two swarms patrol the tall grass:
+   time their drifting, burn fennel to scatter one for good (one per
+   swarm — pick plenty), or wave a conjured broom for a few seconds'
+   peace. Fennel itself grows on an upper platform. Medium — first beat
+   where the consumable runs out.
 4. **Forest edge** — Betony. Dispel a shifting will-o'-wisp-style illusion
    that's hiding the real path in dim light (a light/vision puzzle rather
    than movement). Medium — first puzzle that isn't primarily physical.
