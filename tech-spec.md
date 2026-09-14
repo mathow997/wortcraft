@@ -70,7 +70,8 @@ Kept deliberately minimal — three choices, no stat/skill implications:
 | Element | Behavior |
 |---|---|
 | **Inventory bar** | Persistent strip showing herbs currently held/collected this level. Icon per herb, greyed out until picked up. |
-| **Recipe/Combine prompt** | Appears contextually near a combinable obstacle (e.g. the blighted patch at beat 9) once the apprentice is holding the required ingredient(s). Player confirms to trigger the combine + effect. Not a free-text/drag-and-drop system — recipes are fixed, so this can be a simple "press to use" prompt rather than a full crafting UI. |
+| **Recipe/Combine prompt** | Appears contextually near a combinable obstacle (e.g. the blighted patch at beat 9) once the apprentice is holding the required ingredient(s). Player confirms to trigger the combine + effect. Herb recipes are fixed folklore, so this stays a simple "press to use" prompt rather than a full crafting UI. |
+| **Summon bar** | Free-text type-to-conjure (Scribblenauts-style): `T` opens the bar, typing a noun + Enter spawns the object near the player, `Esc` closes. Ink-limited (3 per run in beat 1) with max 3 live objects — oldest despawned first. Curated lexicon (~20 everyday objects: ladder, bridge, plank, stone…) plus a procedural fallback so unknown words still spawn a rough parcel. |
 | **Active spell indicator** | Small icon showing which spell effect is currently available/equipped, if a herb can be used more than once (e.g. Nettle's ward being placeable in more than one spot). |
 | **Dialogue box** | Bottom-anchored text box for story beats (witch, patient, ambient apprentice thoughts). Simple advance-on-tap/click, no branching needed for v1. |
 | **Puzzle-specific overlays** | Only beat 4 (Betony/illusion) and beat 9 (Crab apple + Chervil combine) need bespoke overlay UI beyond the standard prompt — flag these as custom work, not reusable components. |
@@ -213,6 +214,22 @@ NPC).
 
 Simple linear line arrays are enough for v1 — no branching dialogue needed.
 
+### 3.9 Conjure/lexicon entry schema
+
+```json
+{
+  "word": "ladder",
+  "w": 36,
+  "h": 110,
+  "fill": "#8a6a42",
+  "behavior": "static"
+}
+```
+
+Curated words live in data; unknown words fall back to a hashed parcel
+(size/color derived from the word) so *anything* typed still appears.
+`behavior` is `static` for v1 — float/heavy/bouncy later.
+
 ## 4. Asset Manifest
 
 Organize by category so opencode can generate/import in batches. All should
@@ -270,4 +287,7 @@ Verlet rope, stepping stones, the blighted patch, the garden gate).
 
 ## 5. Open Implementation Questions
 
-None outstanding — flag new ones here as they come up during the build.
+- Resolved: full free-text summon adopted (see §2 Summon bar, §3.9) —
+  overrules the earlier fixed-recipes-only scope. Herb lore stays fixed;
+  everyday-object conjuring is free-text. Flag new questions here as they
+  come up during the build.

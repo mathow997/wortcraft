@@ -17,13 +17,19 @@ jobs.
 1. **Explore** a 2D level on foot (run/jump platforming).
 2. **Collect** ingredients found throughout the level, often gated behind a
    small platforming or environmental puzzle.
-3. **Combine** ingredients into spells via a simple recipe system.
-4. **Use** the resulting spell to solve the next obstacle or puzzle, opening
+3. **Conjure** — type any noun to summon a useful thing (Scribblenauts-style
+   free-text summoning: a curated lexicon of everyday objects plus a
+   procedural fallback so unknown words still spawn something rough).
+   Conjuring costs ink and is limited to a few live objects at once, so it
+   solves traversal problems without replacing herb lore.
+4. **Combine** the nine herbs into salves via fixed folklore recipes
+   (herb effects stay grounded, not free-text).
+5. **Use** the resulting salve to solve the next obstacle or puzzle, opening
    up new areas of the level.
 
-This is the "combine things to solve problems" spirit of Scribblenauts,
-scoped down to a fixed recipe book rather than free-text object summoning —
-much more buildable for a solo/small project.
+This keeps the "combine things to solve problems" spirit of Scribblenauts,
+with full type-to-conjure for everyday objects alongside the fixed Nine
+Herbs recipe book — free summoning for traversal, fixed lore for the cure.
 
 ## Scope for v1
 

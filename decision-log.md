@@ -99,3 +99,11 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     draws from a single flat, ungendered pool of real medieval first names
     (e.g. Aldith, Wulfric, Godgifu, Leofric) rather than a gender-split list
     or invented fantasy names.
+
+18. **Full free-text summon adopted.** Overruled the earlier fixed-recipes-only
+    scope (design-doc Core Loop, tech-spec §2): typing any noun now conjures
+    an object Scribblenauts-style — curated lexicon (~20 everyday objects)
+    plus a procedural fallback so unknown words still spawn a rough parcel.
+    Ink-limited (3 per run, max 3 live) so conjuring solves traversal without
+    replacing herb lore. Herb effects and the Nine Herbs recipes stay fixed
+    folklore; behaviors (float/heavy/bouncy) deferred to v2.
