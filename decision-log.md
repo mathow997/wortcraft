@@ -169,3 +169,12 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     overlapping mound ellipses tucked behind the ground line, round-canopy
     trees added to garden + home stretch, outdoor platforms get grass caps
     so they read as turf-topped rather than bare bars.
+
+27. **Universal summon gravity + detailed sprites.** Magic-hover removed:
+    every non-float summon falls when unsupported and lands, so shoving one
+    off an edge drops it (only settled objects are pushable). All ~25
+    lexicon words now draw as proper little things — ladders with rungs,
+    braced crates, grained planks, faceted stones, stepped stairs, tables,
+    hooped barrels, seamed balls, cushions, balloons with strings, clouds,
+    anvils, doors, shields, boats, wattle walls — plus word labels; unknown
+    words get a `?` parcel.

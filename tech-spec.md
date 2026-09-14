@@ -229,11 +229,12 @@ Simple linear line arrays are enough for v1 — no branching dialogue needed.
 Curated words live in data; unknown words fall back to a hashed parcel
 (size/color derived from the word) so *anything* typed still appears.
 `behavior` is one of `static` (platform), `float` (rises, carries rider),
-`heavy` (falls under gravity, lands), `bouncy` (trampolines the player),
-`climb` (scalable with W/S), `rope` (Verlet strand — drapes under gravity,
-auto-anchors its top to surfaces above, rideable). Grounded summons are
-pushable — walk into one to shove it (heavies shove slowly; floats drift
-instead).
+`heavy` (falls under gravity, lands — and shoves slowly), `bouncy`
+(trampolines the player), `climb` (scalable with W/S), `rope` (Verlet
+strand — drapes under gravity, auto-anchors its top to surfaces above,
+rideable). Every non-float summon obeys gravity: unsupported objects fall
+and land, so pushing one off an edge drops it. Only resting (supported)
+summons can be pushed — walk into one to shove it; floats drift instead.
 
 Ropelike words (`rope`, `vine`, `chain` — heavier) spawn strands, not
 solids. Loose ends show frayed; tied points show knots. Securing: a falling

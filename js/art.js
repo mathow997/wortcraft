@@ -345,6 +345,117 @@ function buildDecor(){
   return cv;
 }
 
+// conjured objects drawn as proper little things, not bare boxes
+function drawSummon(g,s,glyph){
+  const {x,y,w,h,word,c}=s;
+  sh(g,x,y,w,h);
+  const W=f=>{g.fillStyle=f;}, O=(lw=2.5)=>{g.strokeStyle=INK;g.lineWidth=lw;};
+  const nail=(nx,ny)=>{ g.fillStyle=INK; g.fillRect(nx-1.5,ny-1.5,3,3); };
+  const label=()=>{ g.fillStyle=INK; g.font='11px Georgia'; g.fillText(word+(glyph?' '+glyph:''),x+2,y-7); };
+  const cx=x+w/2;
+  if(word==='ladder'){
+    W(C.bark); g.fillRect(x,y,7,h); g.fillRect(x+w-7,y,7,h);
+    O(); g.strokeRect(x,y,7,h); g.strokeRect(x+w-7,y,7,h);
+    W(C.clay);
+    for(let ry=y+10;ry<y+h-4;ry+=18){ g.fillRect(x+7,ry,w-14,6); O(2); g.strokeRect(x+7,ry,w-14,6); }
+  } else if(word==='pole'){
+    const rows=Math.max(1,Math.floor(h/14));
+    for(let i=0;i<rows;i++){ W(i%2?C.clay:C.bark); g.fillRect(x,y+i*14,w,Math.min(14,h-i*14)); }
+    O(); g.strokeRect(x,y,w,h);
+    W(C.must); g.beginPath(); g.arc(cx,y-2,6,0,7); g.fill(); O(2); g.stroke();
+  } else if(word==='plank'||word==='bridge'||word==='beam'){
+    W(C.clay); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
+    W(C.bark); g.fillRect(x,y,6,h); g.fillRect(x+w-6,y,6,h);
+    dash(g,x+10,y+h/2,x+w-10,y+h/2,C.bark);
+    nail(x+12,y+h/2); nail(x+w-12,y+h/2);
+  } else if(word==='crate'||word==='box'||word==='chest'||word==='block'){
+    W(c); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
+    O(2); g.strokeRect(x+5,y+5,w-10,h-10);
+    g.beginPath(); g.moveTo(x+6,y+6); g.lineTo(x+w-6,y+h-6); g.stroke();
+    nail(x+10,y+10); nail(x+w-10,y+10); nail(x+10,y+h-10); nail(x+w-10,y+h-10);
+    if(word==='chest'){ W(C.bark); g.fillRect(x,y,w,9); O(2); g.strokeRect(x,y,w,9);
+      W(C.must); g.fillRect(cx-4,y+h/2-4,8,8); O(2); g.strokeRect(cx-4,y+h/2-4,8,8); }
+  } else if(word==='step'||word==='stairs'){
+    for(let i=0;i<3;i++){
+      const sw=w/3, sh2=h*(i+1)/3;
+      W(i%2?C.parch:c); g.fillRect(x+i*sw,y+h-sh2,sw,sh2); O(2); g.strokeRect(x+i*sw,y+h-sh2,sw,sh2);
+    }
+    O(); g.strokeRect(x,y,w,h);
+  } else if(word==='stone'||word==='rock'||word==='boulder'){
+    W(c); g.beginPath();
+    g.moveTo(x+4,y+h*0.35); g.lineTo(x+w*0.3,y+2); g.lineTo(x+w-6,y+h*0.3);
+    g.lineTo(x+w-3,y+h-4); g.lineTo(x+w*0.4,y+h-2); g.lineTo(x+2,y+h*0.7); g.closePath();
+    g.fill(); O(); g.stroke();
+    dash(g,x+w*0.3,y+8,x+w*0.45,y+h-8,C.ash);
+  } else if(word==='table'){
+    W(C.bark); g.fillRect(x,y,w,10); O(); g.strokeRect(x,y,w,10);
+    W(C.clay); g.fillRect(x+4,y+10,8,h-10); g.fillRect(x+w-12,y+10,8,h-10); O(2);
+    g.strokeRect(x+4,y+10,8,h-10); g.strokeRect(x+w-12,y+10,8,h-10);
+    dash(g,x+6,y+h-8,x+w-6,y+h-8,C.bark);
+  } else if(word==='barrel'){
+    W(c); g.beginPath();
+    g.moveTo(x+6,y); g.quadraticCurveTo(x-4,y+h/2,x+6,y+h);
+    g.lineTo(x+w-6,y+h); g.quadraticCurveTo(x+w+4,y+h/2,x+w-6,y); g.closePath();
+    g.fill(); O(); g.stroke();
+    g.fillStyle=INK; g.fillRect(x+1,y+h*0.2,w-2,4); g.fillRect(x-1,y+h/2-2,w+2,4); g.fillRect(x+1,y+h*0.75,w-2,4);
+    W(C.rust); g.beginPath(); g.arc(cx,y+h*0.42,3,0,7); g.fill();
+  } else if(word==='ball'){
+    const r=Math.min(w,h)/2;
+    W(c); g.beginPath(); g.arc(cx,y+h/2,r,0,7); g.fill(); O(); g.stroke();
+    g.beginPath(); g.arc(cx,y+h/2,r-6,0.6,2.6); g.stroke();
+    W(C.cream); g.beginPath(); g.arc(cx-6,y+h/2-7,3,0,7); g.fill();
+  } else if(word==='cushion'){
+    W(c); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
+    O(1.5); g.setLineDash([4,3]); g.strokeRect(x+5,y+5,w-10,h-10); g.setLineDash([]);
+    [[10,10],[w-10,10],[10,h-10],[w-10,h-10]].forEach(([dx,dy])=>{ W(C.rust); g.beginPath(); g.arc(x+dx,y+dy,2.5,0,7); g.fill(); });
+  } else if(word==='balloon'){
+    W(c); g.beginPath(); g.ellipse(cx,y+h/2-8,w/2,h/2-8,0,0,7); g.fill(); O(); g.stroke();
+    W(C.cream); g.beginPath(); g.ellipse(cx-6,y+h/2-16,5,10,-0.3,0,7); g.fill();
+    W(C.rust);
+    g.beginPath(); g.moveTo(cx-4,y+h-14); g.lineTo(cx+4,y+h-14); g.lineTo(cx,y+h-8); g.closePath(); g.fill(); O(2); g.stroke();
+    O(2); g.beginPath(); g.moveTo(cx,y+h-8); g.lineTo(cx,y+h); g.stroke();
+  } else if(word==='cloud'){
+    W(C.cream);
+    g.beginPath(); g.arc(cx-18,y+h-14,12,0,7); g.arc(cx,y+h-20,16,0,7); g.arc(cx+18,y+h-14,12,0,7); g.fill(); O(2); g.stroke();
+  } else if(word==='anvil'){
+    W(C.night);
+    g.fillRect(x+6,y+h-12,w-12,12);
+    g.beginPath(); g.moveTo(x+w*0.35,y+h-12); g.lineTo(x+w*0.65,y+h-12); g.lineTo(x+w*0.55,y+14); g.lineTo(x+w*0.45,y+14); g.closePath(); g.fill();
+    g.fillRect(x,y, w,14);
+    g.beginPath(); g.moveTo(x+w,y+2); g.lineTo(x+w+12,y+7); g.lineTo(x+w,y+12); g.closePath(); g.fill();
+    O(); g.strokeRect(x+6,y+h-12,w-12,12); g.strokeRect(x,y,w,14);
+    W(C.ash); g.fillRect(x+8,y+4,8,6);
+  } else if(word==='door'){
+    W(C.bark);
+    for(let i=0;i<3;i++){ g.fillRect(x+i*(w/3),y,w/3,h); }
+    O(); g.strokeRect(x,y,w,h);
+    O(2); g.beginPath(); g.moveTo(x+4,y+4); g.lineTo(x+w-4,y+h-4); g.moveTo(x+4,y+h-4); g.lineTo(x+w-4,y+4); g.stroke();
+    W(C.must); g.beginPath(); g.arc(x+w-10,y+h/2,5,0,7); g.fill(); O(2); g.stroke();
+  } else if(word==='shield'){
+    W(c); g.beginPath();
+    g.moveTo(x+3,y); g.lineTo(x+w-3,y); g.lineTo(x+w-3,y+h*0.5);
+    g.quadraticCurveTo(x+w-3,y+h*0.85,cx,y+h-2); g.quadraticCurveTo(x+3,y+h*0.85,x+3,y+h*0.5); g.closePath();
+    g.fill(); O(); g.stroke();
+    W(C.must); g.beginPath(); g.arc(cx,y+h*0.42,7,0,7); g.fill(); O(2); g.stroke();
+  } else if(word==='boat'){
+    W(C.bark); g.beginPath();
+    g.moveTo(x,y); g.lineTo(x+w,y); g.lineTo(x+w-12,y+h); g.lineTo(x+12,y+h); g.closePath();
+    g.fill(); O(); g.stroke();
+    W(C.clay); g.fillRect(x+8,y+4,w-16,7); O(2); g.strokeRect(x+8,y+4,w-16,7);
+    dash(g,x+16,y+14,x+16,y+h-4,C.clay); dash(g,x+w-16,y+14,x+w-16,y+h-4,C.clay);
+  } else if(word==='wall'){
+    W(C.parch); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
+    W(C.bark); g.fillRect(x,y,6,h); g.fillRect(x+w-6,y,6,h);
+    for(let ry=y+8;ry<y+h-4;ry+=10) dash(g,x+8,ry,x+w-8,ry+4,ry%20?C.clay:C.bark);
+  } else { // wild fallback parcel + any other noun: crate build with its tint
+    W(c); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
+    O(2); g.strokeRect(x+5,y+5,w-10,h-10);
+    g.beginPath(); g.moveTo(x+6,y+6); g.lineTo(x+w-6,y+h-6); g.stroke();
+    g.fillStyle=INK; g.font='bold 14px Georgia'; g.fillText('?',cx-5,y+h-8);
+  }
+  label();
+}
+
 // upgraded apprentice: robe + stitching, belt, satchel, boots, 4 hairstyles, facing
 function drawApprentice(g,x,y,w,h,color,hair,facing,carry){
   sh(g,x,y,w,h);
@@ -386,5 +497,5 @@ function drawApprentice(g,x,y,w,h,color,hair,facing,carry){
   g.stroke();
 }
 
-return {buildDecor, drawApprentice, LAYOUT};
+return {buildDecor, drawApprentice, drawSummon, LAYOUT};
 })();

@@ -229,7 +229,7 @@
     if(summons.length+ropes.length>=3) evictOldest();
     if(spec.rope){ spawnRope(word,spec); liveOrder.push('r'); }
     else {
-      summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,resting:spec.b==='static'||spec.b==='climb'||spec.b==='bouncy',wild:spec.wild});
+      summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,resting:false,wild:spec.wild});
       liveOrder.push('s');
     }
     ink--; updateInk();
@@ -489,8 +489,7 @@
   // Floats drift on their own; heavies shove slowly once landed.
   function pushable(s){
     if(s.b==='float') return false;
-    if(s.b==='heavy') return s.resting;
-    return true;
+    return s.resting; // only shove settled objects — falling ones are hands-off
   }
   function tryPush(dx){
     if(!dx) return;
@@ -524,34 +523,29 @@
         }
         if(blocked){ s.y+=45*dt; s.resting=true; }
         else if(riding){ player.y=s.y-player.h; player.vy=Math.min(0,player.vy); }
-          } else if(s.b==='heavy' && !s.resting){
+      } else if(s.b!=='float'){
+        // everything solid obeys gravity: supported rests, pushed-off falls
+        const bodies=solids.concat(summons.filter(q=>q!==s));
+        const under={x:s.x+2,y:s.y+s.h,w:Math.max(1,s.w-4),h:3};
+        let supported=false;
+        for(const o of bodies){ if(Engine.overlap(under,o)){ supported=true; break; } }
+        if(supported){ s.vy=0; s.resting=true; continue; }
+        s.resting=false;
         s.vy+=2200*dt;
-        let ny=s.y+s.vy*dt, hit=false;
-        const probe={x:s.x,y:ny,w:s.w,h:s.h};
-        for(const o of solids.concat(summons.filter(q=>q!==s))){
-          if(Engine.overlap(probe,o)){ hit=true; break; }
-        }
+        const fall={x:s.x,y:s.y+s.vy*dt,w:s.w,h:s.h};
+        let hit=false;
+        for(const o of bodies){ if(Engine.overlap(fall,o)){ hit=true; break; } }
         if(hit){ // land on top of whatever stopped it
           let top=Infinity;
-          for(const o of solids.concat(summons.filter(q=>q!==s))){
+          for(const o of bodies){
             if(s.x+s.w>o.x && s.x<o.x+o.w && o.y>=s.y && o.y<top) top=o.y;
           }
           s.y=(top===Infinity?s.y:top-s.h); s.vy=0; s.resting=true;
-          for(let i=0;i<8;i++) fx.push({x:s.x+Math.random()*s.w,y:s.y+s.h,vx:(Math.random()-.5)*120,vy:-Math.random()*120,life:.6});
-        } else s.y=ny;
-        if(s.y>2000){ s.resting=true; }
+          const n=(s.b==='heavy')?8:4;
+          for(let i=0;i<n;i++) fx.push({x:s.x+Math.random()*s.w,y:s.y+s.h,vx:(Math.random()-.5)*120,vy:-Math.random()*120,life:.6});
+        } else s.y=fall.y;
+        if(s.y>2000){ s.vy=0; s.resting=true; }
       }
-    }
-    // balloon-vs-sky cap: resting floats hover where stopped
-    // heavies re-check support (a shove off a ledge sets them falling again)
-    for(const s of summons){
-      if(s.b!=='heavy' || !s.resting) continue;
-      const probe={x:s.x+2,y:s.y+s.h,w:s.w-4,h:3};
-      let supported=false;
-      for(const o of solids.concat(summons.filter(q=>q!==s))){
-        if(Engine.overlap(probe,o)){ supported=true; break; }
-      }
-      if(!supported){ s.resting=false; s.vy=0; }
     }
   }
 
@@ -637,7 +631,7 @@
       Engine.paperRect(ctx,s.x,s.y,s.w,s.h,'#8a7a52'); // platforms only — art owns the ground
       if(s.x<600||s.x>1860){ ctx.fillStyle='#8a9a5b'; ctx.fillRect(s.x,s.y,s.w,5); } // grass cap outdoors
     });
-    summons.forEach(s=>{ Engine.paperRect(ctx,s.x,s.y,s.w,s.h,s.c); ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(s.word+(GLYPH[s.b]?' '+GLYPH[s.b]:''),s.x+6,s.y+16); });
+    summons.forEach(s=>Art.drawSummon(ctx,s,GLYPH[s.b]||''));
     // ropes: paper strokes, knots where tied, frayed loose ends
     for(const r of ropes){
       ctx.lineJoin='round'; ctx.lineCap='round';
