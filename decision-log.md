@@ -247,3 +247,7 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     screen height, so vertical follow is locked off there — no more bobbing
     when hopping the high platforms above the swamp. Only the tall shed
     (ch.1) scrolls vertically.
+
+38. **Hosting: GitHub Pages.** Free, updates deploy on every push to
+    `main`, no build step (relative paths only, no backend). Verified
+    Pages-ready; owner enables it once in repo settings.
