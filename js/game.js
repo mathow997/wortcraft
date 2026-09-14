@@ -101,7 +101,8 @@
   const WORLD={x:0,y:-360,w:3200,h:900};
   const keys=Engine.makeInput();
   const cam=Engine.makeCamera(960,540);
-  let player, solids, summons, ropes, liveOrder, jars, checkpoint, exitArch, thorns, running=false, raf=0, hasMugwort=false, hasCloth=false, won=false, fx=[], ink=8, climbT=0, decor=null, facing=1;
+  const MAX_INK=50; // conjuring budget per run; banishing refunds 1
+  let player, solids, summons, ropes, jars, checkpoint, exitArch, thorns, running=false, raf=0, hasMugwort=false, hasCloth=false, won=false, fx=[], ink=MAX_INK, climbT=0, decor=null, facing=1;
   const grabbed={rope:null,idx:0,cd:0}; // rope rider state
   const carried={rope:null,end:'last'}; // carried loose end (pick up + move before tying)
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
@@ -158,13 +159,13 @@
       {x:2520,y:400,w:100,h:18},
     ];
     summons=[];
-    ropes=[]; liveOrder=[]; grabbed.rope=null; grabbed.cd=0; carried.rope=null; climbT=0;
+    ropes=[]; grabbed.rope=null; grabbed.cd=0; carried.rope=null; climbT=0;
     // dusty jars, one per high platform — the herb shuffles across all three every run
     const labels=['mugwort','thyme','sage'].sort(()=>Math.random()-0.5);
     jars=labels.map((label,i)=>({x:Art.LAYOUT.jarSpots[i].x,y:Art.LAYOUT.jarSpots[i].y,w:30,h:38,label,dust:3}));
     exitArch={x:3050,y:364,w:70,h:120}; // the door home
     thorns=[{x:620,y:468,w:120,h:16}]; // conjure a plank or take the high platform
-    hasMugwort=false; hasCloth=false; won=false; fx=[]; ink=8; updateInk();
+    hasMugwort=false; hasCloth=false; won=false; fx=[]; ink=MAX_INK; updateInk();
     buildInventory();
     playDialogue('dialogue_level01_intro');
     running=true; let last=performance.now();
@@ -208,14 +209,35 @@
     }
     if(e.key==='Escape'){ summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
   });
-  function evictOldest(){ // max 6 live conjurings across summons + ropes
-    const k=liveOrder.shift();
-    const out=(k==='r')?ropes.shift():summons.shift();
-    if(out && grabbed.rope===out) grabbed.rope=null;
-    if(out && carried.rope===out) carried.rope=null;
-  }
   // cleaning supplies: conjuring one equips it (held, costs ink, no live slot)
   const CLEAN_WORDS=['cloth','rag','sponge','brush','duster'];
+  function banish(){ // X: remove the nearest conjured thing, refund 1 ink
+    if(won || dialogueOpen()) return;
+    const c=playerCenter();
+    let best=null, bestD=95;
+    for(const s of summons){
+      const d=Math.hypot((s.x+s.w/2)-c.x,(s.y+s.h/2)-c.y);
+      if(d<bestD){ best={kind:'s',o:s,x:s.x+s.w/2,y:s.y+s.h/2}; bestD=d; }
+    }
+    for(const r of ropes){
+      if(r===grabbed.rope||r===carried.rope) continue;
+      for(const p of r.pts){
+        const d=Math.hypot(p.x-c.x,p.y-c.y);
+        if(d<bestD){ best={kind:'r',o:r,x:p.x,y:p.y}; bestD=d; }
+      }
+    }
+    if(!best) return;
+    if(best.kind==='s') summons.splice(summons.indexOf(best.o),1);
+    else ropes.splice(ropes.indexOf(best.o),1);
+    for(let i=0;i<10;i++) fx.push({x:best.x+(Math.random()-.5)*30,y:best.y+(Math.random()-.5)*30,vx:(Math.random()-.5)*140,vy:-Math.random()*140,life:.6});
+    ink=Math.min(MAX_INK,ink+1); updateInk();
+    flashHint('Banished. (+1 ink)');
+  }
+  addEventListener('keydown', e=>{
+    if(e.code!=='KeyX' || !screens.level.classList.contains('active')) return;
+    if(document.activeElement===summonInput) return;
+    banish();
+  });
   function conjure(word){
     if(ink<=0 || won) return;
     if(!word){ flashHint('Type a noun, e.g. ladder, cloth, rope, balloon.'); return; }
@@ -226,11 +248,9 @@
       return;
     }
     const spec=specFor(word);
-    if(summons.length+ropes.length>=6) evictOldest();
-    if(spec.rope){ spawnRope(word,spec); liveOrder.push('r'); }
+    if(spec.rope){ spawnRope(word,spec); }
     else {
       summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,resting:false,wild:spec.wild});
-      liveOrder.push('s');
     }
     ink--; updateInk();
     if(spec.wild) flashHint(`"${word}" appears, roughly. The ink doesn't quite know it.`);
@@ -406,7 +426,6 @@
     A.pts.forEach(p=>{p.px=p.x;p.py=p.y;});
     A.segLen=(A.segLen+B.segLen)/2;
     ropes.splice(ropes.indexOf(B),1);
-    liveOrder.splice(liveOrder.indexOf('r'),1);
     if(grabbed.rope===B){ grabbed.rope=A; grabbed.idx=Alen+((bEnd==='first')?grabbed.idx:(Blen-1-grabbed.idx)); }
     else if(grabbed.rope===A && aEnd==='first'){ grabbed.idx=Alen-1-grabbed.idx; }
     if(carried.rope===A||carried.rope===B) carried.rope=null; // tied end was in hand — let go
@@ -664,6 +683,16 @@
       }
       if(hx){ ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia'; ctx.fillText(label,hx.x-20,hx.y-14); }
     }
+    // X hint over the nearest conjured object
+    if(!won){
+      const c2=playerCenter();
+      let bx=null,bd=95;
+      for(const s of summons){
+        const d=Math.hypot((s.x+s.w/2)-c2.x,(s.y+s.h/2)-c2.y);
+        if(d<bd){ bd=d; bx={x:s.x+s.w/2,y:s.y}; }
+      }
+      if(bx){ ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia'; ctx.fillText('X: banish',bx.x-30,bx.y-24); }
+    }
     // thorns hazard
     thorns.forEach(t=>{ // bare spikes, no label
       ctx.fillStyle='#cfc4a8';
@@ -692,7 +721,7 @@
     ctx.restore();
     // HUD text
     ctx.fillStyle='#2e3a68'; ctx.font='14px Georgia';
-    ctx.fillText('A/D move+push · Space jump · E wipe/use/grab/tie · T conjure · find mugwort, take it home →', 12, 20);
+    ctx.fillText('A/D move+push · Space jump · E wipe/use/grab/tie · T conjure · X banish · find mugwort, take it home →', 12, 20);
     const nm=(store.char&&store.char.name)||'Apprentice';
     ctx.fillText(nm, 12, 40);
   }

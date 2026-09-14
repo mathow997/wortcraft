@@ -182,3 +182,9 @@ reference alongside `design-doc.md` and `tech-spec.md`.
 28. **Generous conjuring budget.** Ink 5→8 per run, live cap 3→6. Scarcity
     reserved as a later-level difficulty lever (per-level ink/live tuning),
     not a beat-1 constraint.
+
+29. **No live cap; banish to clean up.** Live-object eviction removed —
+    conjured things persist until banished. Ink is the only limit (50 per
+    run for now). `X` removes the nearest conjured object/strand (never the
+    one being ridden or carried) with a parchment puff and refunds 1 ink,
+    so experimenting and retrying is free-ish. On-screen `X: banish` hint.
