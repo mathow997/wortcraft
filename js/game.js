@@ -106,7 +106,7 @@
   const WORLD={x:0,y:0,w:3200,h:540};
   const keys=Engine.makeInput();
   const cam=Engine.makeCamera(960,540);
-  let player, solids, summons, ropes, liveOrder, jars, checkpoint, exitArch, thorns, running=false, raf=0, hasMugwort=false, won=false, fx=[], ink=3, climbT=0;
+  let player, solids, summons, ropes, liveOrder, jars, checkpoint, exitArch, thorns, running=false, raf=0, hasMugwort=false, won=false, fx=[], ink=3, climbT=0, decor=null, facing=1;
   const grabbed={rope:null,idx:0,cd:0}; // rope rider state
   const carried={rope:null,end:'last'}; // carried loose end (pick up + move before tying)
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
@@ -142,6 +142,7 @@
 
   function startLevel(){
     show('level');
+    decor=Art.buildDecor(); // detailed pre-rendered scenery (shed interior, garden, ravine, door)
     $('#summon-bar').classList.add('hidden');
     checkpoint={x:60,y:380};
     player=Engine.physicsBody(60,380,28,44);
@@ -150,7 +151,7 @@
       {x:300,y:420,w:110,h:18},    // tutorial hop
       {x:600,y:400,w:180,h:18},    // over the thorn bed
       {x:900,y:410,w:90,h:18},     // step toward the shed
-      {x:1000,y:280,w:220,h:18,id:'shelf'}, // HIGH SHELF — needs a ladder (or wings)
+      {x:Art.LAYOUT.shelf.x,y:Art.LAYOUT.shelf.y,w:Art.LAYOUT.shelf.w,h:18,id:'shelf'}, // HIGH SHELF — needs a ladder (or wings)
       {x:1300,y:410,w:90,h:18},
       {x:1640,y:420,w:80,h:18},    // ravine islands
       {x:1740,y:380,w:80,h:18},
@@ -163,7 +164,7 @@
     ropes=[]; liveOrder=[]; grabbed.rope=null; grabbed.cd=0; carried.rope=null; climbT=0;
     // dusty jars on the shelf — labels shuffled every run, wipe (E) to read
     const labels=['mugwort','thyme','sage'].sort(()=>Math.random()-0.5);
-    jars=labels.map((label,i)=>({x:1032+i*62,y:242,w:30,h:38,label,dust:3}));
+    jars=labels.map((label,i)=>({x:Art.LAYOUT.jarXs[i],y:Art.LAYOUT.jarY,w:30,h:38,label,dust:3}));
     exitArch={x:3050,y:364,w:70,h:120}; // the door home
     thorns=[{x:620,y:468,w:120,h:16}]; // conjure a plank or take the high platform
     hasMugwort=false; won=false; fx=[]; ink=3; updateInk();
@@ -565,6 +566,7 @@
     player.vx=0;
     if(keys['ArrowLeft']||keys['KeyA']) player.vx=-speed;
     if(keys['ArrowRight']||keys['KeyD']) player.vx=speed;
+    if(player.vx>0) facing=1; else if(player.vx<0) facing=-1;
     const ladderRide=summons.find(s=>s.b==='climb' && Engine.overlap(player,{x:s.x-8,y:s.y-8,w:s.w+16,h:s.h+16}));
     if(keys['Space']&&(player.onGround||ladderRide)) player.vy=-780; // Space jumps off ladders too
     else if((keys['ArrowUp']||keys['KeyW'])&&player.onGround) player.vy=-780;
@@ -621,11 +623,9 @@
 
   function render(){
     ctx.clearRect(0,0,960,540);
+    if(decor) ctx.drawImage(decor,Math.round(cam.x),Math.round(cam.y),960,540,0,0,960,540);
     ctx.save(); ctx.translate(-cam.x,-cam.y);
-    // parallax paper sheets (bg/mid/fg)
-    Engine.paperRect(ctx,cam.x,cam.y-40,960,220,'#c9b98f');           // distant sheet
-    for(let i=0;i<10;i++) Engine.paperRect(ctx,i*340+40,cam.y+60+((i%2)*20),180,120,'#b7a67e'); // hills
-    solids.forEach(s=>Engine.paperRect(ctx,s.x,s.y,s.w,s.h,'#8a7a52')); // platforms/ground
+    solids.forEach(s=>{ if(s.id&&s.id.indexOf('ground')===0) return; Engine.paperRect(ctx,s.x,s.y,s.w,s.h,'#8a7a52'); }); // platforms only — art owns the ground
     summons.forEach(s=>{ Engine.paperRect(ctx,s.x,s.y,s.w,s.h,s.c); ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(s.word+(GLYPH[s.b]?' '+GLYPH[s.b]:''),s.x+6,s.y+16); });
     // ropes: paper strokes, knots where tied, frayed loose ends
     for(const r of ropes){
@@ -661,13 +661,9 @@
     }
     // thorns hazard
     thorns.forEach(t=>{ Engine.paperRect(ctx,t.x,t.y,t.w,t.h,'#3d7038'); ctx.fillStyle='#e8dcc0'; ctx.font='12px serif'; ctx.fillText('▲▲▲ thorns',t.x+8,t.y+13); });
-    // visible exit arch
-    Engine.paperRect(ctx,exitArch.x,exitArch.y,exitArch.w,exitArch.h,'#c9a44a');
-    ctx.fillStyle='#2e3a68'; ctx.font='bold 14px Georgia'; ctx.fillText('EXIT →',exitArch.x-6,exitArch.y-10);
-    ctx.fillStyle='#2e3a68'; ctx.fillRect(exitArch.x+12,exitArch.y+20,46,80); // dark doorway
-    ctx.fillStyle='#e8c96a'; ctx.font='22px serif'; ctx.fillText('➔',exitArch.x+26,exitArch.y+68);
-    // dusty jars on the high shelf
-    ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText('potting shed shelf',1000,266);
+    // exit door visuals live in the decor layer — gameplay keeps just the label
+    ctx.fillStyle='#2e3a68'; ctx.font='bold 14px Georgia'; ctx.fillText('EXIT →',exitArch.x-6,exitArch.y-28);
+    // dusty jars on the high shelf (shelf dressing lives in the decor layer)
     jars.forEach(j=>{
       Engine.paperRect(ctx,j.x,j.y,j.w,j.h, j.label==='mugwort'&&j.dust===0 ? '#5f8448' : '#8a6a42');
       if(j.dust>0){ // dust layer
@@ -677,11 +673,10 @@
         if(j.label==='mugwort'){ ctx.font='16px serif'; ctx.fillText('🌿',j.x+7,j.y+24); }
       }
     });
-    // player w/ clothing tint + hair
-    const ch=store.char||{clothingColor:'#b3552e'};
-    Engine.paperRect(ctx,player.x,player.y,player.w,player.h,ch.clothingColor);
-    ctx.fillStyle='#d9b48f'; ctx.fillRect(player.x+5,player.y-12,18,14);
-    ctx.fillStyle='#3a2a1a'; ctx.fillRect(player.x+4,player.y-16,20,8);
+    // apprentice paper doll (creation-screen hair, arm raised when carrying rope)
+    const ch=store.char||{clothingColor:'#b3552e',hairstyleId:'hair_01'};
+    const hairIdx=Math.max(0,Math.min(3,(parseInt((ch.hairstyleId||'hair_01').slice(-2),10)||1)-1));
+    Art.drawApprentice(ctx,player.x,player.y,player.w,player.h,ch.clothingColor,hairIdx,facing,!!carried.rope);
     fx.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle='#f4ebd4';ctx.fillRect(p.x,p.y,6,6);ctx.globalAlpha=1;});
     ctx.restore();
     // HUD text

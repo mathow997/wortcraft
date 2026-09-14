@@ -142,3 +142,16 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     refuses impossible spans (too far to reach, or so close the rope would
     bunch into a stub). Ropes lengthened (~168px) so tied lines read
     properly. Grabbing the middle of a strand still rides it.
+
+24. **Detailed procedural art pass.** New `js/art.js` pre-renders the whole
+    3200px level once to an offscreen canvas (strict 22-palette, indigo
+    outlines, stitch dashes, offset shadows): garden with fence/flowers,
+    potting-shed interior with daub-and-timber walls, window + light shaft,
+    three backdrop shelves (~20 jars/books/candles), the gameplay shelf
+    with back panel and end jars, hanging sign, five herb bundles,
+    workbench with mortar/books/candle, rug with sleeping cat, broom,
+    spider web, floorboards, dark ravine with roots and mist, and a
+    detailed cottage door (thatch lip, lantern, step) at the exit. The
+    apprentice is now a paper doll: robe with torn hem and stitching,
+    belt, satchel, boots, all 4 creation hairstyles, facing eyes, and a
+    raised arm while carrying rope.
