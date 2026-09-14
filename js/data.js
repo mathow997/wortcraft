@@ -41,16 +41,16 @@ fieldbook:[
   {id:"fieldbook_chervil",herbId:"chervil",unlockedBy:"puzzle_09",isHistorical:true,text:"Stirred with crab apple in the antidote; teaches the two-herb combine."}
 ],
 spells:[
-  {id:"warding_smoke",inputs:["mugwort"],effect:"dispel_creature",triggerPuzzle:"puzzle_01"},
+  {id:"warding_smoke",inputs:["mugwort"],effect:"dispel_creature",triggerPuzzle:"puzzle_04"},
   {id:"antidote",inputs:["crab_apple","chervil"],effect:"neutralize_blight",triggerPuzzle:"puzzle_09"},
   {id:"nine_herbs_charm",inputs:["mugwort","plantain","betony","chamomile","nettle","crab_apple","chervil","fennel","lambs_cress"],effect:"cure_patient",triggerPuzzle:"puzzle_10"}
 ],
 npcs:[
-  {id:"shadow_gate",displayName:"Garden shadow",appearsIn:"puzzle_01",behavior:"blocks_until_dispelled",calmedBy:"mugwort"},
+  {id:"shadow_gate",displayName:"Lurking shadow",appearsIn:"puzzle_04",behavior:"blocks_until_dispelled",calmedBy:"mugwort"},
   {id:"goat_bridge",displayName:"Startled Goat",appearsIn:"puzzle_02",behavior:"blocks_until_calmed",calmedBy:"chamomile"}
 ],
 dialogues:{
-  dialogue_level01_intro:{id:"dialogue_level01_intro",speaker:"witch",lines:["Mugwort first. The potting shed keeps its jars on the high shelf — higher than any apprentice can jump.","An inch of dust on every jar. Wipe them clean to read the labels.","Need something? Type it (T) — a ladder, perhaps. Mind the ink: three conjurings a trip."]},
+  dialogue_level01_intro:{id:"dialogue_level01_intro",speaker:"witch",lines:["Mugwort first. The potting shed keeps its jars on three high shelves — higher than any apprentice can jump, and the herb moves shelf to shelf.","An inch of dust on every jar, and bare hands will only smear it. Conjure a cloth, wipe them clean to read the labels.","Need to get up there? Type it (T) — a ladder, perhaps. Mind the ink: five conjurings a trip."]},
   dialogue_beat1_pickup:{id:"dialogue_beat1_pickup",speaker:"apprentice",lines:["Mugwort. Mother of herbs.","One herb for the charm. Now walk it home — east, through the door."]},
   dialogue_level01_outro:{id:"dialogue_level01_outro",speaker:"witch",lines:["One herb found, eight to go.","The charm is patient. The patient is not — back out there soon."]}
 },

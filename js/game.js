@@ -18,13 +18,8 @@
   function drawPreview(){
     const c=$('#cc-preview'), x=c.getContext('2d');
     x.clearRect(0,0,96,96);
-    x.fillStyle='rgba(0,0,0,.25)'; x.fillRect(30,25,36,44);
-    x.fillStyle=WORT.colors[colorIdx]; x.fillRect(26,21,36,44); // robe tint layer (palette-mapped)
-    x.strokeStyle='#2e3a68'; x.lineWidth=3; x.strokeRect(26,21,36,44);
-    x.fillStyle='#d9b48f'; x.fillRect(34,8,20,18); // face (skin)
-    x.fillStyle='#3a2a1a';
-    const styles=[()=>x.fillRect(32,2,24,10),()=>{x.fillRect(28,2,32,8);x.fillRect(28,8,6,16);},()=>x.fillRect(30,0,28,14),()=>{x.fillRect(34,0,12,24);}];
-    styles[hairIdx]();
+    x.fillStyle='#d9c9a3'; x.fillRect(0,0,96,96); // backdrop card
+    Art.drawApprentice(x,30,26,36,52,WORT.colors[colorIdx],hairIdx,1,false); // same doll as in-game
     $('#cc-hair-label').textContent=`Hair ${hairIdx+1}/4`;
   }
   function buildSwatches(){
@@ -103,10 +98,10 @@
 
   // ---- LEVEL: beat 1 vertical slice (harder + summon demo) ----
   const canvas=$('#game'), ctx=canvas.getContext('2d');
-  const WORLD={x:0,y:0,w:3200,h:540};
+  const WORLD={x:0,y:-360,w:3200,h:900};
   const keys=Engine.makeInput();
   const cam=Engine.makeCamera(960,540);
-  let player, solids, summons, ropes, liveOrder, jars, checkpoint, exitArch, thorns, running=false, raf=0, hasMugwort=false, won=false, fx=[], ink=3, climbT=0, decor=null, facing=1;
+  let player, solids, summons, ropes, liveOrder, jars, checkpoint, exitArch, thorns, running=false, raf=0, hasMugwort=false, hasCloth=false, won=false, fx=[], ink=5, climbT=0, decor=null, facing=1;
   const grabbed={rope:null,idx:0,cd:0}; // rope rider state
   const carried={rope:null,end:'last'}; // carried loose end (pick up + move before tying)
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
@@ -151,7 +146,9 @@
       {x:300,y:420,w:110,h:18},    // tutorial hop
       {x:600,y:400,w:180,h:18},    // over the thorn bed
       {x:900,y:410,w:90,h:18},     // step toward the shed
-      {x:Art.LAYOUT.shelf.x,y:Art.LAYOUT.shelf.y,w:Art.LAYOUT.shelf.w,h:18,id:'shelf'}, // HIGH SHELF — needs a ladder (or wings)
+      {x:980,y:300,w:180,h:18,id:'jar1'},   // HIGH jar platforms — jumps can't reach any of them
+      {x:1280,y:160,w:180,h:18,id:'jar2'},
+      {x:1560,y:-20,w:140,h:18,id:'jar3'},
       {x:1300,y:410,w:90,h:18},
       {x:1640,y:420,w:80,h:18},    // ravine islands
       {x:1740,y:380,w:80,h:18},
@@ -162,12 +159,12 @@
     ];
     summons=[];
     ropes=[]; liveOrder=[]; grabbed.rope=null; grabbed.cd=0; carried.rope=null; climbT=0;
-    // dusty jars on the shelf — labels shuffled every run, wipe (E) to read
+    // dusty jars, one per high platform — the herb shuffles across all three every run
     const labels=['mugwort','thyme','sage'].sort(()=>Math.random()-0.5);
-    jars=labels.map((label,i)=>({x:Art.LAYOUT.jarXs[i],y:Art.LAYOUT.jarY,w:30,h:38,label,dust:3}));
+    jars=labels.map((label,i)=>({x:Art.LAYOUT.jarSpots[i].x,y:Art.LAYOUT.jarSpots[i].y,w:30,h:38,label,dust:3}));
     exitArch={x:3050,y:364,w:70,h:120}; // the door home
     thorns=[{x:620,y:468,w:120,h:16}]; // conjure a plank or take the high platform
-    hasMugwort=false; won=false; fx=[]; ink=3; updateInk();
+    hasMugwort=false; hasCloth=false; won=false; fx=[]; ink=5; updateInk();
     buildInventory();
     playDialogue('dialogue_level01_intro');
     running=true; let last=performance.now();
@@ -186,6 +183,7 @@
       const d=document.createElement('div'); d.className='slot'+(hasMugwort?'':' locked'); d.textContent=h.icon; d.title=h.displayName;
       inv.appendChild(d);
     });
+    if(hasCloth){ const d=document.createElement('div'); d.className='slot'; d.textContent='🧽'; d.title='Cloth'; inv.appendChild(d); }
     $('#spell-indicator').textContent = hasMugwort ? '🌿 mugwort — take it home east →' : '';
   }
 
@@ -216,9 +214,17 @@
     if(out && grabbed.rope===out) grabbed.rope=null;
     if(out && carried.rope===out) carried.rope=null;
   }
+  // cleaning supplies: conjuring one equips it (held, costs ink, no live slot)
+  const CLEAN_WORDS=['cloth','rag','sponge','brush','duster'];
   function conjure(word){
     if(ink<=0 || won) return;
-    if(!word){ flashHint('Type a noun, e.g. ladder, rope, balloon, anvil, ball.'); return; }
+    if(!word){ flashHint('Type a noun, e.g. ladder, cloth, rope, balloon.'); return; }
+    if(CLEAN_WORDS.includes(word)){
+      if(hasCloth){ flashHint('Already carrying a cloth.'); return; }
+      hasCloth=true; buildInventory(); ink--; updateInk();
+      flashHint(`"${word}" in hand — wipe the jars (E).`);
+      return;
+    }
     const spec=specFor(word);
     if(summons.length+ropes.length>=3) evictOldest();
     if(spec.rope){ spawnRope(word,spec); liveOrder.push('r'); }
@@ -465,6 +471,7 @@
     return jars.find(j=>Math.hypot((j.x+j.w/2)-c.x,(j.y+j.h/2)-c.y)<85) || null;
   }
   function wipeJar(j){
+    if(!hasCloth){ flashHint('Dust an inch thick — bare hands will smear it. Conjure a cloth (T).'); return; }
     if(j.dust>0){
       j.dust--;
       for(let i=0;i<6;i++) fx.push({x:j.x+Math.random()*j.w,y:j.y+Math.random()*j.h,vx:(Math.random()-.5)*90,vy:-Math.random()*90,life:.5});
@@ -600,7 +607,7 @@
     // jar prompt + E: dusty jars first, then rope carry/grab
     const jar=nearJar();
     $('#combine-prompt').classList.toggle('hidden',!jar);
-    if(jar) $('#combine-name').textContent=jar.dust>0?'dust cloth':'jar';
+    if(jar) $('#combine-name').textContent=!hasCloth?'a cloth first (T)':(jar.dust>0?'dust cloth':'jar');
     if(keys['KeyE'] && grabbed.cd<=0){
       if(jar) wipeJar(jar);
       else if(carried.rope) carryTieOrDrop();
@@ -623,7 +630,7 @@
 
   function render(){
     ctx.clearRect(0,0,960,540);
-    if(decor) ctx.drawImage(decor,Math.round(cam.x),Math.round(cam.y),960,540,0,0,960,540);
+    if(decor) ctx.drawImage(decor,Math.round(cam.x),Math.round(cam.y)+360,960,540,0,0,960,540);
     ctx.save(); ctx.translate(-cam.x,-cam.y);
     solids.forEach(s=>{ if(s.id&&s.id.indexOf('ground')===0) return; Engine.paperRect(ctx,s.x,s.y,s.w,s.h,'#8a7a52'); }); // platforms only — art owns the ground
     summons.forEach(s=>{ Engine.paperRect(ctx,s.x,s.y,s.w,s.h,s.c); ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(s.word+(GLYPH[s.b]?' '+GLYPH[s.b]:''),s.x+6,s.y+16); });
@@ -660,7 +667,13 @@
       if(hx){ ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia'; ctx.fillText(label,hx.x-20,hx.y-14); }
     }
     // thorns hazard
-    thorns.forEach(t=>{ Engine.paperRect(ctx,t.x,t.y,t.w,t.h,'#3d7038'); ctx.fillStyle='#e8dcc0'; ctx.font='12px serif'; ctx.fillText('▲▲▲ thorns',t.x+8,t.y+13); });
+    thorns.forEach(t=>{ // bare spikes, no label
+      ctx.fillStyle='#cfc4a8';
+      for(let x=t.x;x<t.x+t.w;x+=14){
+        ctx.beginPath(); ctx.moveTo(x,t.y+t.h); ctx.lineTo(x+7,t.y-8); ctx.lineTo(x+14,t.y+t.h); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle='#2e3a68'; ctx.lineWidth=2; ctx.stroke();
+      }
+    });
     // exit door visuals live in the decor layer — gameplay keeps just the label
     ctx.fillStyle='#2e3a68'; ctx.font='bold 14px Georgia'; ctx.fillText('EXIT →',exitArch.x-6,exitArch.y-28);
     // dusty jars on the high shelf (shelf dressing lives in the decor layer)

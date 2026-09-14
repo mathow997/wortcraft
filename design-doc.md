@@ -75,8 +75,9 @@ ramps noticeably but not punishingly — each new mechanic gets introduced on
 its own before being combined with an earlier one.
 
 1. **Witch's Cottage garden + potting shed** — Mugwort. Tutorial beat:
-   basic run/jump, then find the herb: three dusty jars on an unjumpable
-   high shelf, labels shuffled every run. Wipe jars (E) to read them,
+   basic run/jump, then find the herb: three dusty jars on three separate
+   high platforms (no jump reaches any of them), labels and herb shelf
+   shuffled every run. Conjure a cloth to wipe with (bare hands smear),
    conjure a way up (a ladder is the obvious answer, not the only one),
    take the mugwort, then trek east with it through the door — thorns,
    a ravine, and hill hops on the way. Teaches movement + conjuring +

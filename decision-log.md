@@ -143,6 +143,15 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     bunch into a stub). Ropes lengthened (~168px) so tied lines read
     properly. Grabbing the middle of a strand still rides it.
 
+25. **Taller shed, split jars, cloth gate, unlabeled thorns.** Beat 1's jars
+    now sit one per high platform across three heights (world is 900px tall
+    with vertical camera), and the mugwort shuffles across all three every
+    run — every jar must be reachable, none by jumping. Wiping needs a
+    conjured cloth/rag/sponge/brush/duster (bare hands smear; equipped to
+    inventory, costs ink, no live slot); ink raised to five. Thorns draw as
+    bare spikes with no label. Creation-screen preview uses the same paper
+    doll as in-game. Warding smoke + shadow data moved to puzzle_04.
+
 24. **Detailed procedural art pass.** New `js/art.js` pre-renders the whole
     3200px level once to an offscreen canvas (strict 22-palette, indigo
     outlines, stitch dashes, offset shadows): garden with fence/flowers,
