@@ -230,8 +230,19 @@ Curated words live in data; unknown words fall back to a hashed parcel
 (size/color derived from the word) so *anything* typed still appears.
 `behavior` is one of `static` (platform), `float` (rises, carries rider),
 `heavy` (falls under gravity, lands), `bouncy` (trampolines the player),
-`climb` (scalable with W/S). Grounded summons are pushable — walk into one
-to shove it (heavies shove slowly; floats drift instead).
+`climb` (scalable with W/S), `rope` (Verlet strand — drapes under gravity,
+auto-anchors its top to surfaces above, rideable). Grounded summons are
+pushable — walk into one to shove it (heavies shove slowly; floats drift
+instead).
+
+Ropelike words (`rope`, `vine`, `chain` — heavier) spawn strands, not
+solids. Loose ends show frayed; tied points show knots. Securing: a falling
+strand auto-anchors its top to the nearest surface above (thrown over), or
+drapes where it lands. Manual tying with `E` near a loose end: near another
+loose end knots the two ropes into one longer strand; near a solid surface
+ties off onto it (snapped to the surface). Riding: `E` grabs a strand, `W/S`
+climbs along it, `A/D` pumps the swing, `Space` lets go with momentum, `E`
+lets go and ties off if holding an end.
 
 ## 4. Asset Manifest
 

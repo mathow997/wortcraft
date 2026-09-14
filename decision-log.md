@@ -118,3 +118,12 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     so a ladder can be pushed into place under a ledge or a plank slid over
     thorns. Heavies shove slowly and re-fall if pushed off a ledge; floats
     can't be pushed (they drift).
+
+21. **Ropelike behavior + tying.** `rope`/`vine`/`chain` conjure Verlet
+    strands (chain is heavier/stiffer) instead of solids. A strand's top
+    auto-anchors to the nearest surface above it, else it drapes where it
+    lands. Loose ends can be tied with `E`: end-to-end knots two ropes into
+    one longer strand (40-point cap); onto a surface ties off at that spot.
+    Riding a strand: `E` grabs, `W/S` climbs, `A/D` pumps the swing, `Space`
+    releases with momentum. Knots vs frayed ends drawn in-world; counts
+    against the same 3-live-object cap.

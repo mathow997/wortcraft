@@ -106,7 +106,8 @@
   const WORLD={x:0,y:0,w:1920,h:540};
   const keys=Engine.makeInput();
   const cam=Engine.makeCamera(960,540);
-  let player, solids, summons, herb, shadow, gateWall, exitArch, thorns, running=false, raf=0, hasMugwort=false, shadowGone=false, won=false, fx=[], ink=3;
+  let player, solids, summons, ropes, liveOrder, herb, shadow, gateWall, exitArch, thorns, running=false, raf=0, hasMugwort=false, shadowGone=false, won=false, fx=[], ink=3, climbT=0;
+  const grabbed={rope:null,idx:0,cd:0}; // rope rider state
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
   // v1 implementation: curated base + procedural fallback so unknown words still spawn.
   // behaviors: static | float (rises, carries rider) | heavy (falls, lands) | bouncy (trampoline) | climb (W/S to scale)
@@ -117,12 +118,18 @@
     stairs:['#c9a44a',90,60,'static'], table:['#8a6a42',80,40,'static'], door:['#6a4a26',40,90,'static'],
     wall:['#8a7a4a',30,110,'static'], block:['#cfc4a8',50,50,'static'], boat:['#6a4a26',110,30,'static'],
     shield:['#2e3a68',40,50,'static'],
-    ladder:['#8a6a42',36,110,'climb'], rope:['#c9a44a',16,100,'climb'], pole:['#6a4a26',16,110,'climb'],
+    ladder:['#8a6a42',36,110,'climb'], pole:['#6a4a26',16,110,'climb'],
     balloon:['#b3552e',44,58,'float'], cloud:['#f5efdd',90,36,'float'],
     anvil:['#1f2a4a',70,44,'heavy'], boulder:['#9a9a92',80,60,'heavy'], barrel:['#7a4a1a',44,60,'heavy'],
     ball:['#b3552e',36,36,'bouncy'], cushion:['#8a9a5b',56,24,'bouncy'] };
-  const GLYPH={static:'',float:'↑',heavy:'▼',bouncy:'~',climb:'≡'};
+  const GLYPH={static:'',float:'↑',heavy:'▼',bouncy:'~',climb:'≡',rope:'➰'};
+  // ropelike words simulate as Verlet strands (see rope system below), not solids
+  const ROPE_WORDS={
+    rope:{c:'#c9a44a',segs:9,len:13,g:1,damp:0.985},
+    vine:{c:'#5f8448',segs:9,len:13,g:0.9,damp:0.98},
+    chain:{c:'#9a9a92',segs:7,len:13,g:1.6,damp:0.99} };
   function specFor(word){
+    if(ROPE_WORDS[word]) return {rope:true,word,...ROPE_WORDS[word]};
     if(LEXICON[word]){ const [c,w,h,b]=LEXICON[word]; return {w,h,c,b}; }
     // fallback: hash word -> sized parcel so *anything* typed appears (Scribblenauts feel, zero-backend)
     let hsh=0; for(const ch of word) hsh=(hsh*31+ch.charCodeAt(0))>>>0;
@@ -144,6 +151,7 @@
       {x:900,y:284,w:40,h:200,id:'gatewall'}, // blocking wall, removed on dispel
     ];
     summons=[];
+    ropes=[]; liveOrder=[]; grabbed.rope=null; grabbed.cd=0; climbT=0;
     herb={x:498,y:292,w:28,h:28,taken:false}; // above 2nd platform — needs precise jump
     shadow={x:872,y:420,w:60,h:64};
     gateWall=true;
@@ -192,14 +200,23 @@
     }
     if(e.key==='Escape'){ summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
   });
+  function evictOldest(){ // max 3 live conjurings across summons + ropes
+    const k=liveOrder.shift();
+    if(k==='r') ropes.shift(); else summons.shift();
+  }
   function conjure(word){
     if(ink<=0 || won) return;
-    if(!word){ flashHint('Type a noun, e.g. ladder, balloon, anvil, ball, plank.'); return; }
+    if(!word){ flashHint('Type a noun, e.g. ladder, rope, balloon, anvil, ball.'); return; }
     const spec=specFor(word);
-    if(summons.length>=3) summons.shift(); // max 3 live
-    summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,resting:spec.b==='static'||spec.b==='climb'||spec.b==='bouncy',wild:spec.wild});
+    if(summons.length+ropes.length>=3) evictOldest();
+    if(spec.rope){ spawnRope(word,spec); liveOrder.push('r'); }
+    else {
+      summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,resting:spec.b==='static'||spec.b==='climb'||spec.b==='bouncy',wild:spec.wild});
+      liveOrder.push('s');
+    }
     ink--; updateInk();
     if(spec.wild) flashHint(`"${word}" appears, roughly. The ink doesn't quite know it.`);
+    else if(spec.rope) flashHint(`"${word}" falls — it catches on platforms above, or tie the loose end (E).`);
     else if(spec.b!=='static') flashHint(`"${word}" conjured — ${{float:'it rises! Ride it ↑',heavy:'heavy! It drops ▼',bouncy:'bouncy! Jump on it ~',climb:'climb it with W/S ≡'}[spec.b]}`);
   }
   let hintTimer=null;
@@ -207,6 +224,186 @@
     $('#spell-indicator').textContent=msg;
     clearTimeout(hintTimer);
     hintTimer=setTimeout(buildInventory,1800);
+  }
+
+  // ---- rope system: Verlet strands that drape, anchor, knot together, and carry the rider ----
+  function spawnRope(word,spec){
+    const sx=player.x+player.w+20, sy=player.y+6;
+    const pts=[];
+    for(let i=0;i<=spec.segs;i++) pts.push({x:sx,y:sy+i*spec.len,px:sx,py:sy+i*spec.len,pinned:false});
+    ropes.push({word,c:spec.c,segs:spec.segs,segLen:spec.len,g:spec.g,damp:spec.damp,pts});
+  }
+  function ptInSolid(p,s,pad=2){ return p.x>s.x-pad && p.x<s.x+s.w+pad && p.y>s.y-pad && p.y<s.y+s.h+pad; }
+  function closestOnRect(x,y,s){
+    const cx=Math.max(s.x,Math.min(s.x+s.w,x)), cy=Math.max(s.y,Math.min(s.y+s.h,y));
+    return {x:cx,y:cy,d:Math.hypot(x-cx,y-cy)};
+  }
+  function collideRopePoints(r,bodies){
+    for(const p of r.pts){
+      if(p.pinned) continue;
+      for(const s of bodies){
+        if(!ptInSolid(p,s,3)) continue;
+        const dxl=p.x-(s.x-3), dxr=(s.x+s.w+3)-p.x, dyt=p.y-(s.y-3), dyb=(s.y+s.h+3)-p.y;
+        const m=Math.min(dxl,dxr,dyt,dyb);
+        if(m===dxl) p.x=s.x-3; else if(m===dxr) p.x=s.x+s.w+3;
+        else if(m===dyt) p.y=s.y-3; else p.y=s.y+s.h+3;
+        p.px=p.x; p.py=p.y;
+      }
+      p.x=Math.max(4,Math.min(1916,p.x));
+    }
+  }
+  function anchorTop(r,bodies){
+    const top=r.pts[0];
+    if(top.pinned) return;
+    // 1. surface directly above (thrown over a beam/platform) or overlapping a solid
+    for(const s of bodies){
+      if(ptInSolid(top,s,2)){ top.pinned=true; return; }
+      if(top.x>s.x-8 && top.x<s.x+s.w+8){
+        const gap=top.y-(s.y+s.h);
+        if(gap>=-4 && gap<=42){ top.x=Math.max(s.x,Math.min(s.x+s.w,top.x)); top.y=s.y+s.h+2; top.px=top.x; top.py=top.y; top.pinned=true; return; }
+      }
+    }
+    // 2. draped: settled onto a top surface below
+    const sp=Math.hypot(top.x-top.px,top.y-top.py);
+    if(sp<1.2){
+      for(const s of bodies){
+        if(top.x>s.x-4 && top.x<s.x+s.w+4){
+          const gap=s.y-top.y;
+          if(gap>=-2 && gap<=8){ top.y=s.y-2; top.px=top.x; top.py=top.y; top.pinned=true; return; }
+        }
+      }
+    }
+  }
+  function stepRopes(dt){
+    const bodies=allSolids();
+    for(const r of ropes){
+      const g=2200*r.g*dt*dt;
+      const riding=grabbed.rope===r;
+      for(let i=0;i<r.pts.length;i++){
+        const p=r.pts[i];
+        if(p.pinned) continue;
+        let vx=(p.x-p.px)*r.damp, vy=(p.y-p.py)*r.damp;
+        p.px=p.x; p.py=p.y;
+        p.x+=vx; p.y+=vy+g+((riding && i>=grabbed.idx)?g*0.85:0);
+        if(riding && i>=grabbed.idx && (keys['ArrowLeft']||keys['KeyA']||keys['ArrowRight']||keys['KeyD'])){
+          p.x+=((keys['ArrowRight']||keys['KeyD'])?1:-1)*340*dt; // pump the swing
+        }
+      }
+      for(let k=0;k<5;k++){
+        for(let i=0;i<r.pts.length-1;i++){
+          const a=r.pts[i], b=r.pts[i+1];
+          let dx=b.x-a.x, dy=b.y-a.y;
+          const d=Math.hypot(dx,dy)||0.001, diff=(d-r.segLen)/d;
+          if(!a.pinned && !b.pinned){ dx*=0.5; dy*=0.5; a.x+=dx; a.y+=dy; b.x-=dx; b.y-=dy; }
+          else if(a.pinned && !b.pinned){ b.x-=dx*diff; b.y-=dy*diff; }
+          else if(!a.pinned && b.pinned){ a.x+=dx*diff; a.y+=dy*diff; }
+        }
+      }
+      collideRopePoints(r,bodies);
+      anchorTop(r,bodies);
+    }
+    // rider follows the held point
+    if(grabbed.rope){
+      const pt=grabbed.rope.pts[grabbed.idx];
+      player.x=pt.x-player.w/2; player.y=pt.y+2;
+      player.vx=0; player.vy=0; player.onGround=false;
+    }
+  }
+  function playerCenter(){ return {x:player.x+player.w/2,y:player.y+player.h/2}; }
+  function nearestRopePoint(c,maxD){
+    let best=null;
+    for(const r of ropes) for(let i=0;i<r.pts.length;i++){
+      const p=r.pts[i], d=Math.hypot(p.x-c.x,p.y-c.y);
+      if(d<maxD && (!best||d<best.d)) best={rope:r,idx:i,d};
+    }
+    return best;
+  }
+  function nearestLooseEnd(c,maxD){
+    let best=null;
+    for(const r of ropes){
+      for(const [end,endIdx] of [['first',0],['last',r.pts.length-1]]){
+        const p=r.pts[endIdx];
+        if(p.pinned) continue;
+        const d=Math.hypot(p.x-c.x,p.y-c.y);
+        if(d<maxD && (!best||d<best.d)) best={rope:r,end,endIdx,d};
+      }
+    }
+    return best;
+  }
+  function findTieTarget(self,endPt){
+    // (a) another rope's loose end nearby -> knot together
+    for(const r of ropes){
+      if(r===self.rope) continue;
+      for(const [end,endIdx] of [['first',0],['last',r.pts.length-1]]){
+        const p=r.pts[endIdx];
+        if(p.pinned) continue;
+        if(Math.hypot(p.x-endPt.x,p.y-endPt.y)<=70) return {type:'rope',rope:r,end,endIdx};
+      }
+    }
+    // (b) a solid surface nearby -> tie off (snapped onto the surface)
+    let best=null;
+    for(const s of allSolids()){
+      const c=closestOnRect(endPt.x,endPt.y,s);
+      if(c.d<=16 && (!best||c.d<best.d)) best={type:'solid',x:c.x,y:c.y,d:c.d};
+    }
+    return best;
+  }
+  function doTie(e,t){
+    const p=e.rope.pts[e.endIdx];
+    if(t.type==='solid'){
+      p.x=t.x; p.y=t.y; p.px=p.x; p.py=p.y; p.pinned=true;
+      flashHint(`"${e.rope.word}" tied fast.`);
+    } else mergeRopes(e.rope,e.end,t.rope,t.end);
+  }
+  function mergeRopes(A,aEnd,B,bEnd){
+    const Alen=A.pts.length, Blen=B.pts.length;
+    if(Alen+Blen>40){ flashHint('Too much rope to knot — the ink slips.'); return; }
+    const Aseq=(aEnd==='last')?A.pts:[...A.pts].reverse();
+    const Bseq=(bEnd==='first')?B.pts:[...B.pts].reverse();
+    A.pts=Aseq.concat(Bseq);
+    A.pts.forEach(p=>{p.px=p.x;p.py=p.y;});
+    A.segLen=(A.segLen+B.segLen)/2;
+    ropes.splice(ropes.indexOf(B),1);
+    liveOrder.splice(liveOrder.indexOf('r'),1);
+    if(grabbed.rope===B){ grabbed.rope=A; grabbed.idx=Alen+((bEnd==='first')?grabbed.idx:(Blen-1-grabbed.idx)); }
+    else if(grabbed.rope===A && aEnd==='first'){ grabbed.idx=Alen-1-grabbed.idx; }
+    flashHint(`Knotted into one long ${A.word}.`);
+  }
+  function grabRope(r,idx){ grabbed.rope=r; grabbed.idx=idx; climbT=0; }
+  function releaseRope(tie){
+    const r=grabbed.rope; if(!r){ return; }
+    const pt=r.pts[grabbed.idx];
+    const dt=1/60;
+    player.vx=Math.max(-550,Math.min(550,(pt.x-pt.px)/dt));
+    player.vy=Math.max(-600,Math.min(600,(pt.y-pt.py)/dt));
+    player.onGround=false;
+    const wasEnd=(grabbed.idx===0||grabbed.idx===r.pts.length-1);
+    grabbed.rope=null; grabbed.cd=0.3;
+    if(tie && wasEnd){
+      const ends=grabbed.idx===0?'first':'last';
+      const t=findTieTarget({rope:r},pt);
+      if(t) doTie({rope:r,end:ends,endIdx:grabbed.idx},t);
+    }
+  }
+  function ropeInteract(){
+    const c=playerCenter();
+    const e=nearestLooseEnd(c,64);
+    if(e){
+      const p=e.rope.pts[e.endIdx];
+      const t=findTieTarget(e,p);
+      if(t){ doTie(e,t); return; }
+      grabRope(e.rope,e.endIdx); return;
+    }
+    const n=nearestRopePoint(c,48);
+    if(n) grabRope(n.rope,n.idx);
+  }
+  function updateRopeRider(dt){
+    const r=grabbed.rope;
+    climbT+=dt;
+    if(climbT>0.12){
+      if((keys['KeyW']||keys['ArrowUp'])&&grabbed.idx>0){ grabbed.idx--; climbT=0; }
+      else if((keys['KeyS']||keys['ArrowDown'])&&grabbed.idx<r.pts.length-1){ grabbed.idx++; climbT=0; }
+    }
   }
 
   function allSolids(){ return solids.concat(summons); }
@@ -237,6 +434,7 @@
   }
 
   function updateSummons(dt){
+    stepRopes(dt);
     for(const s of summons){
       if(s.b==='float' && !s.resting){
         // rise slowly; stop on ceiling contact; carry rider
@@ -284,6 +482,15 @@
     // freeze movement while dialogue open (fixes Space-jump conflict + stuck feeling)
     if(dialogueOpen()){ render(); return; }
     updateSummons(dt);
+    if(grabbed.cd>0) grabbed.cd-=dt;
+    if(grabbed.rope){
+      // riding a rope: W/S climb, A/D pump the swing, Space let go, E let go + tie off
+      $('#combine-prompt').classList.add('hidden');
+      if(keys['Space']){ releaseRope(false); keys['Space']=false; }
+      else if(keys['KeyE']){ releaseRope(true); keys['KeyE']=false; }
+      else updateRopeRider(dt);
+      cam.follow(player.x+player.w/2, player.y+player.h/2, WORLD);
+    } else {
     // movement
     const speed=260;
     player.vx=0;
@@ -330,6 +537,8 @@
       keys['KeyE']=false;
       flashHint('Gate open! Head right → through the stone arch.');
     }
+    if(keys['KeyE'] && !showPrompt && grabbed.cd<=0){ ropeInteract(); keys['KeyE']=false; }
+    } // end on-foot branch (rope rider handled above)
     fx.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=300*dt;p.life-=dt;});
     fx=fx.filter(p=>p.life>0);
     // win: touch the visible exit arch (not an invisible x threshold)
@@ -351,6 +560,35 @@
     for(let i=0;i<6;i++) Engine.paperRect(ctx,i*340+40,cam.y+60+((i%2)*20),180,120,'#b7a67e'); // hills
     solids.forEach(s=>Engine.paperRect(ctx,s.x,s.y,s.w,s.h,'#8a7a52')); // platforms/ground
     summons.forEach(s=>{ Engine.paperRect(ctx,s.x,s.y,s.w,s.h,s.c); ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(s.word+(GLYPH[s.b]?' '+GLYPH[s.b]:''),s.x+6,s.y+16); });
+    // ropes: paper strokes, knots where tied, frayed loose ends
+    for(const r of ropes){
+      ctx.lineJoin='round'; ctx.lineCap='round';
+      ctx.strokeStyle='#2e3a68'; ctx.lineWidth=7;
+      ctx.beginPath(); r.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+      ctx.strokeStyle=r.c; ctx.lineWidth=4;
+      ctx.beginPath(); r.pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+      r.pts.forEach(p=>{
+        if(!p.pinned) return;
+        ctx.fillStyle='#2e3a68'; ctx.beginPath(); ctx.arc(p.x,p.y,6,0,7); ctx.fill();
+        ctx.fillStyle=r.c; ctx.beginPath(); ctx.arc(p.x,p.y,3,0,7); ctx.fill();
+      });
+      [r.pts[0],r.pts[r.pts.length-1]].forEach(p=>{
+        if(p.pinned) return;
+        ctx.strokeStyle=r.c; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-5,p.y+7); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+5,p.y+7); ctx.stroke();
+      });
+      const mid=r.pts[Math.floor(r.pts.length/2)];
+      ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(r.word+' ➰',mid.x+8,mid.y);
+    }
+    // E hint near rope (tie a loose end or grab hold)
+    if(!grabbed.rope && !won){
+      const c=playerCenter();
+      let hx=null,label='';
+      const e=nearestLooseEnd(c,64);
+      if(e){ const p=e.rope.pts[e.endIdx]; hx=p; label=findTieTarget(e,p)?'E: tie':'E: grab'; }
+      else { const n=nearestRopePoint(c,48); if(n){ hx=n.rope.pts[n.idx]; label='E: grab'; } }
+      if(hx){ ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia'; ctx.fillText(label,hx.x-20,hx.y-14); }
+    }
     // thorns hazard
     thorns.forEach(t=>{ Engine.paperRect(ctx,t.x,t.y,t.w,t.h,'#3d7038'); ctx.fillStyle='#e8dcc0'; ctx.font='12px serif'; ctx.fillText('▲▲▲ thorns',t.x+8,t.y+13); });
     // gate wall vs open state
@@ -375,7 +613,7 @@
     ctx.restore();
     // HUD text
     ctx.fillStyle='#2e3a68'; ctx.font='14px Georgia';
-    ctx.fillText('A/D move+push · Space jump · E use · T conjure (ladder≡ balloon↑ anvil▼ ball~) · Beat 1: mugwort → smoke → EXIT', 12, 20);
+    ctx.fillText('A/D move+push · Space jump · E use/grab/tie · T conjure (rope➰ ladder≡ balloon↑ anvil▼ ball~) · EXIT →', 12, 20);
     const nm=(store.char&&store.char.name)||'Apprentice';
     ctx.fillText(nm, 12, 40);
   }
