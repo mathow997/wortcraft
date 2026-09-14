@@ -178,3 +178,7 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     hooped barrels, seamed balls, cushions, balloons with strings, clouds,
     anvils, doors, shields, boats, wattle walls — plus word labels; unknown
     words get a `?` parcel.
+
+28. **Generous conjuring budget.** Ink 5→8 per run, live cap 3→6. Scarcity
+    reserved as a later-level difficulty lever (per-level ink/live tuning),
+    not a beat-1 constraint.

@@ -101,7 +101,7 @@
   const WORLD={x:0,y:-360,w:3200,h:900};
   const keys=Engine.makeInput();
   const cam=Engine.makeCamera(960,540);
-  let player, solids, summons, ropes, liveOrder, jars, checkpoint, exitArch, thorns, running=false, raf=0, hasMugwort=false, hasCloth=false, won=false, fx=[], ink=5, climbT=0, decor=null, facing=1;
+  let player, solids, summons, ropes, liveOrder, jars, checkpoint, exitArch, thorns, running=false, raf=0, hasMugwort=false, hasCloth=false, won=false, fx=[], ink=8, climbT=0, decor=null, facing=1;
   const grabbed={rope:null,idx:0,cd:0}; // rope rider state
   const carried={rope:null,end:'last'}; // carried loose end (pick up + move before tying)
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
@@ -164,7 +164,7 @@
     jars=labels.map((label,i)=>({x:Art.LAYOUT.jarSpots[i].x,y:Art.LAYOUT.jarSpots[i].y,w:30,h:38,label,dust:3}));
     exitArch={x:3050,y:364,w:70,h:120}; // the door home
     thorns=[{x:620,y:468,w:120,h:16}]; // conjure a plank or take the high platform
-    hasMugwort=false; hasCloth=false; won=false; fx=[]; ink=5; updateInk();
+    hasMugwort=false; hasCloth=false; won=false; fx=[]; ink=8; updateInk();
     buildInventory();
     playDialogue('dialogue_level01_intro');
     running=true; let last=performance.now();
@@ -208,7 +208,7 @@
     }
     if(e.key==='Escape'){ summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
   });
-  function evictOldest(){ // max 3 live conjurings across summons + ropes
+  function evictOldest(){ // max 6 live conjurings across summons + ropes
     const k=liveOrder.shift();
     const out=(k==='r')?ropes.shift():summons.shift();
     if(out && grabbed.rope===out) grabbed.rope=null;
@@ -226,7 +226,7 @@
       return;
     }
     const spec=specFor(word);
-    if(summons.length+ropes.length>=3) evictOldest();
+    if(summons.length+ropes.length>=6) evictOldest();
     if(spec.rope){ spawnRope(word,spec); liveOrder.push('r'); }
     else {
       summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,resting:false,wild:spec.wild});
