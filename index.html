@@ -4,7 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wortcraft — A medieval puzzle-platformer</title>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=8">
+<script>
+// visible error overlay: game bugs report themselves instead of blank-screening
+window.addEventListener('error', e=>{
+  let box=document.getElementById('errbox');
+  if(!box){ box=document.createElement('div'); box.id='errbox'; document.body.prepend(box); }
+  box.style.cssText='background:#7a1f1f;color:#f5efdd;font:13px monospace;padding:10px;white-space:pre-wrap';
+  box.textContent='Wortcraft hit an error (screenshot this!):\n'+(e.message||e.error)+'\n'+(e.lineno?('line '+e.lineno+' of '+(e.filename||'').split('/').pop()):'');
+});
+</script>
 </head>
 <body>
 <div id="app">
@@ -89,9 +98,9 @@
     </div>
   </div>
 </div>
-<script src="js/data.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/art.js"></script>
-<script src="js/game.js"></script>
+<script src="js/data.js?v=8"></script>
+<script src="js/engine.js?v=8"></script>
+<script src="js/art.js?v=8"></script>
+<script src="js/game.js?v=8"></script>
 </body>
 </html>

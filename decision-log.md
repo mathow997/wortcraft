@@ -228,3 +228,12 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     wash, cattails, fallen log, fireflies, hawk) vs. bright meadow
     (paddock, butterflies). Shed gains a charm chalkboard, stool, and
     garlic braid; forest a stone circle and a perched owl.
+
+35. **Bugfix + usability + toys.** Ch2 blank load fixed (a comment had
+    swallowed the stream const); error overlay + `?v=8` cache-busters added
+    so failures show themselves. Fennel use radius 130→170, swarms give a
+    0.8s flashing grace before driving you back. Ch3 thorns became swampy
+    mud (slows wading, swallows loiterers) with matching decor. Tools now
+    spawn as physical pushable objects (`E` takes, double-`E` sets back
+    down as an object). New throwable grappling hook (`hook`/`grapple`/
+    `grappling`) that anchors into surfaces and drops a swingable rope.

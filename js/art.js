@@ -187,7 +187,8 @@ function buildBeatDecor(theme,opts,H,Y0){
     g.fillStyle=C.ash; g.beginPath(); g.ellipse(x,y,10+rng()*8,6,0,0,7); g.fill();
     g.strokeStyle=INK; g.lineWidth=2; g.stroke();
   }
-  if(opts.water){ // stream gap under the bridge    const wx=opts.water.x, ww=opts.water.w;
+  if(opts.water){ // stream gap under the bridge
+    const wx=opts.water.x, ww=opts.water.w;
     g.fillStyle=C.night; g.fillRect(wx,440,ww,100);
     g.fillStyle=C.water; g.fillRect(wx,492,ww,32);
     dash(g,wx+10,502,wx+ww-10,502,C.cream); dash(g,wx+20,514,wx+ww-30,514,C.cream);
@@ -235,6 +236,19 @@ function buildBeatDecor(theme,opts,H,Y0){
     shroom(g,1710,452,1,C.terra); shroom(g,1780,452,0.9,C.must);
     for(let i=0;i<10;i++){ g.fillStyle=C.honey; g.fillRect(200+rng()*2200,60+rng()*300,3,3); }
     bird(g,1300,60,1.8);
+    // swampy pools (two sit where the mud grabs you) + dead trees + mist
+    [[935],[1315],[2050]].forEach(([x])=>{
+      g.fillStyle=C.moss; g.beginPath(); g.ellipse(x,474,70,12,0,0,7); g.fill();
+      g.strokeStyle=INK; g.lineWidth=2; g.stroke();
+      g.fillStyle=C.night; g.beginPath(); g.ellipse(x,474,44,7,0,0,7); g.fill();
+      g.fillStyle=C.honey; g.beginPath(); g.arc(x-20,472,2.5,0,7); g.arc(x+15,475,2.5,0,7); g.fill();
+    });
+    [[350],[1150],[2320]].forEach(([x])=>{
+      box(g,x-6,360,12,124,C.ash,false);
+      g.strokeStyle=C.ash; g.lineWidth=4;
+      g.beginPath(); g.moveTo(x,400); g.lineTo(x-30,360); g.moveTo(x,420); g.lineTo(x+28,384); g.moveTo(x,380); g.lineTo(x-22,352); g.stroke();
+    });
+    g.fillStyle='rgba(232,220,192,.10)'; g.fillRect(0,400,W2,60);
   }
   return cv;
 }
@@ -667,6 +681,66 @@ function drawSummon(g,s,glyph){
     O(2);
     for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; g.beginPath(); g.moveTo(cx,y+h/2); g.lineTo(cx+Math.cos(a)*20,y+h/2+Math.sin(a)*20); g.stroke(); }
     W(C.rust); g.beginPath(); g.arc(cx,y+h/2,5,0,7); g.fill(); O(2); g.stroke();
+  } else if(word==='flute'){
+    W(c); g.fillRect(x,y+h/2-4,w,8); O(); g.strokeRect(x,y+h/2-4,w,8);
+    g.fillStyle=INK;
+    for(let i=0;i<4;i++){ g.fillRect(x+8+i*6,y+h/2-1,2,2); }
+  } else if(word==='pipe'){
+    W(c); g.fillRect(x,y+h/2-4,w-8,8); O(); g.strokeRect(x,y+h/2-4,w-8,8);
+    W(C.bark); g.fillRect(x+w-10,y,10,h); O(2); g.strokeRect(x+w-10,y,10,h);
+  } else if(word==='horn'){
+    O(9); g.strokeStyle=c;
+    g.beginPath(); g.arc(x+6,y+h,16,Math.PI*1.5,Math.PI*2); g.stroke();
+    O(2); g.strokeStyle=INK;
+    g.beginPath(); g.arc(x+6,y+h,16,Math.PI*1.5,Math.PI*2); g.stroke();
+    g.beginPath(); g.arc(x+6,y+h,7,Math.PI*1.5,Math.PI*2); g.stroke();
+    W(C.must); g.fillRect(x+18,y-2,8,8); O(2); g.strokeRect(x+18,y-2,8,8);
+  } else if(word==='lute'){
+    W(c); g.beginPath(); g.arc(x+11,y+h-11,11,0,7); g.fill(); O(); g.stroke();
+    O(2); g.beginPath(); g.arc(x+11,y+h-11,5,0,7); g.stroke();
+    W(C.bark); g.fillRect(x+16,y,8,h-14); O(2); g.strokeRect(x+16,y,8,h-14);
+    g.fillStyle=INK; g.fillRect(x+17,y+2,2,2); g.fillRect(x+21,y+2,2,2);
+  } else if(word==='harp'){
+    W(C.bark);
+    g.fillRect(x+3,y,6,h); g.fillRect(x+3,y+h-8,w-3,8);
+    g.beginPath(); g.moveTo(x+3,y); g.lineTo(x+w-3,y+h-8); g.lineTo(x+w-9,y+h-8); g.lineTo(x+9,y); g.closePath(); g.fill();
+    O(2); g.strokeRect(x+3,y,6,h);
+    O(1.5); g.strokeStyle=C.cream;
+    for(let i=1;i<=3;i++){ g.beginPath(); g.moveTo(x+6+i*5,y+6); g.lineTo(x+6+i*5,y+h-10); g.stroke(); }
+  } else if(word==='broom'){
+    W(C.bark); g.fillRect(cx-2,y,5,h-22); O(2); g.strokeRect(cx-2,y,5,h-22);
+    W(C.must); g.beginPath();
+    g.moveTo(cx-7,y+h-22); g.lineTo(cx+7,y+h-22); g.lineTo(cx+10,y+h); g.lineTo(cx-10,y+h); g.closePath();
+    g.fill(); O(); g.stroke();
+    dash(g,cx-6,y+h-14,cx+6,y+h-14,C.bark); dash(g,cx-7,y+h-6,cx+7,y+h-6,C.bark);
+    W(C.rust); g.fillRect(cx-5,y+h-26,10,5);
+  } else if(word==='cloth'||word==='rag'){
+    W(c); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
+    O(2); g.beginPath(); g.moveTo(x,y+h); g.lineTo(x+w,y); g.stroke();
+    dash(g,x+4,y+4,x+w-4,y+4,C.parch);
+    if(word==='rag'){ W(C.terra); g.fillRect(x+w-12,y+h-12,9,9); O(2); g.strokeRect(x+w-12,y+h-12,9,9); }
+  } else if(word==='sponge'){
+    W(c); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
+    g.fillStyle=C.bark;
+    [[7,5],[16,9],[10,12],[20,5]].forEach(([dx,dy])=>{ g.beginPath(); g.arc(x+dx,y+dy,1.8,0,7); g.fill(); });
+  } else if(word==='brush'){
+    W(C.bark); g.fillRect(x,y+2,w-12,6); O(2); g.strokeRect(x,y+2,w-12,6);
+    W(C.cream);
+    g.fillRect(x+w-14,y-2,14,h+2); O(2); g.strokeRect(x+w-14,y-2,14,h+2);
+  } else if(word==='duster'){
+    W(C.bark); g.fillRect(cx-2,y+h-18,4,18); O(2); g.strokeRect(cx-2,y+h-18,4,18);
+    W(C.cream);
+    g.beginPath(); g.arc(cx-5,y+8,7,0,7); g.arc(cx+5,y+8,7,0,7); g.arc(cx,y+3,7,0,7); g.fill();
+    O(2); g.stroke();
+  } else if(word==='hook'||word==='grapple'||word==='grappling'){
+    W(C.ash); g.fillRect(cx-3,y,6,h-8); O(2); g.strokeRect(cx-3,y,6,h-8);
+    g.strokeStyle=C.ash; g.lineWidth=4;
+    g.beginPath(); g.moveTo(cx-3,y+h-8); g.quadraticCurveTo(cx-10,y+h,cx-12,y+h-8); g.stroke();
+    g.beginPath(); g.moveTo(cx+3,y+h-8); g.quadraticCurveTo(cx+10,y+h,cx+12,y+h-8); g.stroke();
+    g.strokeStyle=INK; g.lineWidth=2;
+    g.beginPath(); g.moveTo(cx-3,y+h-8); g.quadraticCurveTo(cx-10,y+h,cx-12,y+h-8); g.stroke();
+    g.beginPath(); g.moveTo(cx+3,y+h-8); g.quadraticCurveTo(cx+10,y+h,cx+12,y+h-8); g.stroke();
+    W(C.rust); g.beginPath(); g.arc(cx,y+3,4,0,7); g.fill(); O(2); g.stroke();
   } else { // wild fallback parcel + any other noun: crate build with its tint
     W(c); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
     O(2); g.strokeRect(x+5,y+5,w-10,h-10);

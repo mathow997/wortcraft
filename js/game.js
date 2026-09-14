@@ -104,7 +104,7 @@
   const MAX_INK=50; // conjuring budget per run; banishing refunds 1
   let world={x:0,y:-360,w:3200,h:900};
   let beat=null; // current BEATS entry
-  let player, solids, summons, ropes, pickups, npcs, swarms, checkpoint, exitArch, thorns, running=false, raf=0, counts={}, tools=[], lastE=0, hasCloth=false, revealed=false, won=false, fx=[], ink=MAX_INK, climbT=0, decor=null, facing=1;
+  let player, solids, summons, ropes, pickups, npcs, swarms, muds, checkpoint, exitArch, thorns, running=false, raf=0, counts={}, tools=[], lastE=0, hasCloth=false, revealed=false, won=false, fx=[], ink=MAX_INK, climbT=0, decor=null, facing=1;
   function have(){ return (counts[beat.need]||0)>0; } // beat herb carried this run
   const grabbed={rope:null,idx:0,cd:0}; // rope rider state
   const carried={rope:null,end:'last'}; // carried loose end (pick up + move before tying)
@@ -122,17 +122,22 @@
     balloon:['#b3552e',44,58,'float'], cloud:['#f5efdd',90,36,'float'],
     anvil:['#1f2a4a',70,44,'heavy'], boulder:['#9a9a92',80,60,'heavy'], barrel:['#7a4a1a',44,60,'heavy'],
     ball:['#b3552e',36,36,'bouncy'], cushion:['#8a9a5b',56,24,'bouncy'],
+    flute:['#c9a44a',34,10,'static'], pipe:['#8a6a42',30,10,'static'], horn:['#d9a441',30,20,'static'],
+    lute:['#8a6a42',30,36,'static'], harp:['#6a4a26',30,40,'static'], broom:['#8a6a42',14,64,'static'],
+    cloth:['#f5efdd',26,20,'static'], rag:['#cfc4a8',24,18,'static'], sponge:['#d9a441',26,18,'static'],
+    brush:['#8a6a42',30,14,'static'], duster:['#9a9a92',16,40,'static'],
     torch:['#6a4a26',18,56,'static'], lantern:['#3f7d9c',26,40,'static'],
     stool:['#8a6a42',40,32,'static'], bucket:['#9a9a92',30,30,'static'],
     basket:['#c9a44a',44,30,'static'], sack:['#cfc4a8',40,48,'static'],
     bell:['#d9a441',30,34,'static'], drum:['#b3552e',46,34,'bouncy'],
     banner:['#b3552e',26,90,'static'], book:['#1f2a4a',30,22,'static'],
     candle:['#f5efdd',14,30,'static'], staff:['#6a4a26',12,120,'static'],
-    wheel:['#8a6a42',50,50,'static'] };
+    wheel:['#8a6a42',50,50,'static'],
+    hook:['#9a9a92',24,24,'hook'], grapple:['#9a9a92',24,24,'hook'], grappling:['#9a9a92',24,24,'hook'] };
+  const GLYPH={static:'',float:'↑',heavy:'▼',bouncy:'~',climb:'≡',rope:'➰',hook:'⌒'};
   // the charm is old: modern words are refused, not spawned
   const REJECT=['car','truck','van','bus','phone','computer','laptop','tablet','gun','rifle','pistol','bomb','tank','plane','airplane','helicopter','jet','rocket','robot','plastic','hazmat','spray','fan','engine','motor','battery','bulb','lightbulb','tv','television','radio','camera','bicycle','bike','motorcycle','tractor','laser','refrigerator','microwave','toilet','jeans','sneakers','train'];
   const REJECT_QUIPS=['The ink blots and refuses.','The charm has never heard of such a thing.','A monk faints somewhere.','The page itself seems offended.'];
-  const GLYPH={static:'',float:'↑',heavy:'▼',bouncy:'~',climb:'≡',rope:'➰'};
   // ropelike words simulate as Verlet strands (see rope system below), not solids
   const ROPE_WORDS={
     rope:{c:'#c9a44a',segs:12,len:14,g:1,damp:0.985},
@@ -179,11 +184,16 @@
     ctx.restore();
     if(!n.calmed && Math.hypot((bx+32)-near.x,(by+28)-near.y)<150){
       ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia';
-      ctx.fillText((tools.includes('music')||(counts.chamomile||0)>0)?'U: soothe':'needs soothing…',bx-6,by-12);
+      ctx.fillText((tools.some(t=>t.kind==='music')||(counts.chamomile||0)>0)?'U: soothe':'needs soothing…',bx-6,by-12);
     }
   }
   function g2m(c,x,y){ c.moveTo(x,y); c.lineTo(x-7,y-6); }
   function drawSwarm(s,t){
+    const alarmed=s.fuse!==undefined&&s.fuse<0.8;
+    if(alarmed && Math.sin(t*20)>0){ // flashing warning ring while the fuse burns
+      ctx.strokeStyle='#b3552e'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(s.x+s.w/2,s.y+s.h/2,Math.max(s.w,s.h)/2+8,0,7); ctx.stroke();
+    }
     for(let i=0;i<14;i++){
       const a=t*4+i*2.4;
       const dx=Math.sin(a)*s.w*0.42, dy=Math.cos(a*1.3)*s.h*0.42;
@@ -281,7 +291,7 @@
         for(const n of npcs){ if(n.kind!=='goat'||n.calmed) continue;
           const d=Math.hypot((n.x+n.w/2)-c.x,(n.y+n.h/2)-c.y); if(d<bd){ bd=d; bg=n; } }
         if(!bg){ flashHint('Nothing here needs using.'); return; }
-        if(tools.includes('music')){ playMusic(bg); sootheGoat(bg); }
+        if(tools.some(t=>t.kind==='music')){ playMusic(bg); sootheGoat(bg); }
         else if((counts.chamomile||0)>0){ counts.chamomile--; burnHerb(bg); sootheGoat(bg); if(!counts.chamomile) flashHint('Out of chamomile — pick more.'); }
         else flashHint('The goat needs soothing — chamomile, or music (U).');
       },
@@ -321,21 +331,25 @@
             for(let i=0;i<8;i++) fx.push({x:s.x+Math.random()*s.w,y:s.y+Math.random()*s.h,vx:(Math.random()-.5)*100,vy:-Math.random()*100,life:.6}); } }
           if(s.dead) continue;
           s.x=s.base+Math.sin(t*s.speed+s.phase)*s.range;
-          if(Engine.overlap(player,{x:s.x-10,y:s.y-10,w:s.w+20,h:s.h+20})){ respawn('The swarm drives you back!'); break; }
+          // grace fuse: ~0.8s of angry buzzing before it drives you back
+          if(Engine.overlap(player,{x:s.x-10,y:s.y-10,w:s.w+20,h:s.h+20})){
+            s.fuse=(s.fuse===undefined?0.8:s.fuse)-dt;
+            if(s.fuse<=0){ respawn('The swarm drives you back!'); break; }
+          } else s.fuse=0.8;
         }
       },
       onE(){
         const c=playerCenter();
-        const s=swarms.find(s=>!s.dead && Math.hypot((s.x+s.w/2)-c.x,(s.y+s.h/2)-c.y)<110);
+        const s=swarms.find(s=>!s.dead && Math.hypot((s.x+s.w/2)-c.x,(s.y+s.h/2)-c.y)<150);
         if(!s) return false;
         flashHint('It seethes. U: wave a broom off, or burn fennel to end it.');
         return true;
       },
       use(){
         const c=playerCenter();
-        const s=swarms.find(s=>!s.dead && Math.hypot((s.x+s.w/2)-c.x,(s.y+s.h/2)-c.y)<130);
+        const s=swarms.find(s=>!s.dead && Math.hypot((s.x+s.w/2)-c.x,(s.y+s.h/2)-c.y)<170);
         if(!s){ flashHint('Nothing here needs using.'); return; }
-        if(tools.includes('broom')){
+        if(tools.some(t=>t.kind==='broom')){
           s.dead=true; s.back=6;
           for(let i=0;i<10;i++) fx.push({x:s.x+s.w/2+(Math.random()-.5)*60,y:s.y+s.h/2+(Math.random()-.5)*40,vx:(Math.random()-.5)*260,vy:(Math.random()-.5)*120,life:.6});
           flashHint('Waved off — it will be back. Fennel ends it for good.');
@@ -356,7 +370,7 @@
         {x:700,y:200,w:140,h:18,id:'fenneltop'},
         {x:1100,y:400,w:140,h:18},{x:1330,y:330,w:140,h:18},{x:1600,y:400,w:140,h:18},
       ];
-      thorns=[{x:1250,y:468,w:120,h:16}];
+      thorns=[]; muds=[{x:1240,y:470,w:150,h:14},{x:880,y:470,w:110,h:14}];
       pickups=[{x:755,y:162,w:30,h:38,label:'fennel',herbId:'fennel',dust:0,free:true,yield:4}];
       npcs=[];
       swarms=[
@@ -423,7 +437,7 @@
     $('#summon-bar').classList.add('hidden');
     checkpoint={...beat.spawn};
     player=Engine.physicsBody(beat.spawn.x,beat.spawn.y,28,44);
-    solids=[]; thorns=[]; pickups=[]; npcs=[]; swarms=[]; summons=[]; ropes=[];
+    solids=[]; thorns=[]; pickups=[]; npcs=[]; swarms=[]; muds=[]; summons=[]; ropes=[];
     grabbed.rope=null; grabbed.cd=0; carried.rope=null; climbT=0;
     counts={}; tools=[]; hasCloth=false; revealed=false; won=false; fx=[]; ink=beat.ink; updateInk();
     exitArch={...beat.exit};
@@ -454,7 +468,7 @@
       inv.appendChild(d);
     }
     const TOOL_ICON={cloth:'🧽',music:'🎶',broom:'🧹'};
-    tools.forEach(t=>{ const d=document.createElement('div'); d.className='slot'; d.textContent=TOOL_ICON[t]||'?'; d.title=t; inv.appendChild(d); });
+    tools.forEach(t=>{ const d=document.createElement('div'); d.className='slot'; d.textContent=TOOL_ICON[t.kind]||'?'; d.title=t.word||t.kind; inv.appendChild(d); });
     $('#spell-indicator').textContent = (beat && (counts[beat.need]>0)) ? `${herbIcon(beat.need)} ${beat.need} — take it east →` : '';
   }
 
@@ -479,21 +493,29 @@
     }
     if(e.key==='Escape'){ summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
   });
-  // handheld tools: cloth wipes, music soothes, broom waves off. Two hands, two tools.
+  // handheld tools spawn as real objects: see them, shove them, pick them up (E)
   const TOOL_KIND={cloth:'cloth',rag:'cloth',sponge:'cloth',brush:'cloth',duster:'cloth',flute:'music',pipe:'music',horn:'music',lute:'music',harp:'music',broom:'broom'};
-  function equipTool(kind,word){
-    if(tools.includes(kind)){ flashHint('Already carrying that.'); return; }
-    if(tools.length>=2){ flashHint('Hands full — double-tap E to set something down.'); return; }
-    tools.push(kind); if(kind==='cloth') hasCloth=true;
-    buildInventory(); ink--; updateInk();
-    flashHint(`"${word}" in hand.`+(kind==='cloth'?' Wipe the jars (E).':(kind==='music'?' Press U to play it.':' Press U to wave it.')));
+  function nearTool(){
+    const c=playerCenter();
+    return summons.find(s=>s.tool && Math.hypot((s.x+s.w/2)-c.x,(s.y+s.h/2)-c.y)<85) || null;
   }
-  function dropTool(){
-    const t=tools.shift(); if(!t) return;
-    if(t==='cloth') hasCloth=false;
+  function takeTool(s){
+    if(tools.some(t=>t.kind===s.tool)){ flashHint('Already carrying that.'); return; }
+    if(tools.length>=2){ flashHint('Hands full — double-tap E to set something down.'); return; }
+    tools.push({kind:s.tool,word:s.word});
+    if(s.tool==='cloth') hasCloth=true;
+    summons.splice(summons.indexOf(s),1);
     buildInventory();
+    flashHint(`Picked up the ${s.word}.`+(s.tool==='cloth'?' Wipe the jars (E).':(s.tool==='music'?' Press U to play it.':' Press U to wave it.')));
+  }
+  function dropTool(){ // double-E: set it down as a real object at your feet
+    const t=tools.shift(); if(!t) return;
+    if(t.kind==='cloth') hasCloth=false;
+    buildInventory();
+    const spec=specFor(t.word);
+    summons.push({x:player.x-10,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word:t.word,c:spec.c,b:'static',tool:t.kind,vy:0,resting:false});
     for(let i=0;i<8;i++) fx.push({x:player.x+Math.random()*player.w,y:player.y,vx:(Math.random()-.5)*100,vy:-Math.random()*100,life:.5});
-    flashHint(`Set down the ${t}.`);
+    flashHint(`Set down the ${t.word}.`);
   }
   function banish(){ // X: remove the nearest conjured thing, refund 1 ink
     if(won || dialogueOpen()) return;
@@ -551,16 +573,19 @@
       flashHint(`It's 1178 — what's a ${word}? `+REJECT_QUIPS[Math.floor(Math.random()*REJECT_QUIPS.length)]);
       return;
     }
-    if(TOOL_KIND[word]){ equipTool(TOOL_KIND[word],word); return; }
     const spec=specFor(word);
-    if(spec.rope){ spawnRope(word,spec); }
+    if(TOOL_KIND[word]){ summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:'static',tool:TOOL_KIND[word],vy:0,resting:false}); }
+    else if(spec.rope){ spawnRope(word,spec); }
     else {
-      summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,resting:false,wild:spec.wild});
+      const ns={x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,vx:0,life:0,resting:false,wild:spec.wild};
+      summons.push(ns);
+      if(word==='hook'||word==='grapple'||word==='grappling'){ ns.vx=facing*420; ns.vy=-560; ns.life=1.6; }
     }
     ink--; updateInk();
-    if(spec.wild) flashHint(`"${word}" appears, roughly. The ink doesn't quite know it.`);
+    if(TOOL_KIND[word]) flashHint('There it is — pick it up (E), then press U to use it.');
+    else if(spec.wild) flashHint(`"${word}" appears, roughly. The ink doesn't quite know it.`);
     else if(spec.rope) flashHint(`"${word}" falls — pick up a loose end (E) to carry it, E again to tie or drop.`);
-    else if(spec.b!=='static') flashHint(`"${word}" conjured — ${{float:'it rises! Ride it ↑',heavy:'heavy! It drops ▼',bouncy:'bouncy! Jump on it ~',climb:'climb it with W/S ≡'}[spec.b]}`);
+    else if(spec.b!=='static') flashHint(`"${word}" conjured — ${{float:'it rises! Ride it ↑',heavy:'heavy! It drops ▼',bouncy:'bouncy! Jump on it ~',climb:'climb it with W/S ≡',hook:'thrown! It catches on walls — then grab the rope'}[spec.b]}`);
   }
   let hintTimer=null;
   function flashHint(msg){
@@ -575,6 +600,12 @@
     const pts=[];
     for(let i=0;i<=spec.segs;i++) pts.push({x:sx,y:sy+i*spec.len,px:sx,py:sy+i*spec.len,pinned:false});
     ropes.push({word,c:spec.c,segs:spec.segs,segLen:spec.len,g:spec.g,damp:spec.damp,pts});
+  }
+  function spawnRopeAt(x,y){ // grappling hook landing: rope pinned at the anchor
+    const spec=ROPE_WORDS.rope;
+    const pts=[];
+    for(let i=0;i<=spec.segs;i++) pts.push({x,y:y+i*spec.len,px:x,py:y+i*spec.len,pinned:i===0});
+    ropes.push({word:'rope',c:spec.c,segs:spec.segs,segLen:spec.len,g:spec.g,damp:spec.damp,pts});
   }
   function ptInSolid(p,s,pad=2){ return p.x>s.x-pad && p.x<s.x+s.w+pad && p.y>s.y-pad && p.y<s.y+s.h+pad; }
   function closestOnRect(x,y,s){
@@ -839,7 +870,21 @@
   function updateSummons(dt){
     stepRopes(dt);
     for(const s of summons){
-      if(s.b==='float' && !s.resting){
+      if(s.b==='hook' && !s.resting){
+        // thrown hook: flies, catches the first solid within reach, becomes a rope
+        s.vy+=1400*dt;
+        const nx=s.x+s.vx*dt, ny=s.y+s.vy*dt;
+        const bodies=solids.filter(q=>!q.ghost||revealed).concat(summons.filter(q=>q!==s));
+        let ax=null;
+        for(const o of bodies){ const c=closestOnRect(nx+s.w/2,ny+s.h/2,o); if(c.d<=26){ ax=c; break; } }
+        if(ax){ summons.splice(summons.indexOf(s),1); spawnRopeAt(ax.x,ax.y);
+          for(let i=0;i<10;i++) fx.push({x:ax.x,y:ax.y,vx:(Math.random()-.5)*160,vy:-Math.random()*120,life:.5});
+          flashHint('The hook holds! Grab the rope (E) and swing.');
+        } else {
+          s.x=nx; s.y=ny; s.life-=dt;
+          if(s.life<=0||s.y>2000){ s.b='static'; s.resting=false; s.vx=s.vy=0; }
+        }
+      } else if(s.b==='float' && !s.resting){
         // rise slowly; stop on ceiling contact; carry rider
         const riding=standingOn(player,s);
         const ny=s.y-45*dt;
@@ -896,6 +941,7 @@
     if(keys['ArrowLeft']||keys['KeyA']) player.vx=-speed;
     if(keys['ArrowRight']||keys['KeyD']) player.vx=speed;
     if(player.vx>0) facing=1; else if(player.vx<0) facing=-1;
+    if(muds.some(m=>Engine.overlap(player,m))) player.vx*=0.45; // wading through swamp
     const ladderRide=summons.find(s=>s.b==='climb' && Engine.overlap(player,{x:s.x-8,y:s.y-8,w:s.w+16,h:s.h+16}));
     if(keys['Space']&&(player.onGround||ladderRide)) player.vy=-780; // Space jumps off ladders too
     else if((keys['ArrowUp']||keys['KeyW'])&&player.onGround) player.vy=-780;
@@ -921,16 +967,31 @@
     for(const t of thorns){
       if(Engine.overlap(player,t)){ respawn('Thorns! Take the high platform or conjure a plank (T).'); break; }
     }
+    // swampy mud: wading slows you; loiter and it swallows you
+    let inMud=false;
+    for(const m of muds){
+      if(Engine.overlap(player,m)){
+        inMud=true;
+        if(player.onGround){
+          m.sink=(m.sink||0)+dt;
+          if(m.sink>2.5){ m.sink=0; respawn('The swamp swallows you whole! Keep moving.'); break; }
+        }
+      }
+    }
+    if(!inMud) for(const m of muds) m.sink=0;
 
     // dusty pickups: E wipes a layer; a clean need-herb is taken, wrong pickups named
     // hook.onE gets NPC business (goat, swarms, wisp) before rope carry/grab
     // pickup prompt + E
     const pickup=nearPickup();
-    $('#combine-prompt').classList.toggle('hidden',!pickup);
+    const loose=nearTool();
+    $('#combine-prompt').classList.toggle('hidden',!pickup&&!loose);
     if(pickup) $('#combine-name').textContent=(pickup.dust>0&&!pickup.free&&!hasCloth)?'a cloth first (T)':(pickup.dust>0?'wipe':'take');
+    else if(loose) $('#combine-name').textContent='take '+loose.word;
     if(keys['KeyE'] && grabbed.cd<=0){
       let acted=false;
       if(pickup){ wipePickup(pickup); acted=true; }
+      else if(loose){ takeTool(loose); acted=true; }
       else if(beat.hook.onE && beat.hook.onE()){ acted=true; }
       else if(carried.rope){ carryTieOrDrop(); acted=true; }
       else { acted=ropeInteract(); }
@@ -1011,13 +1072,28 @@
       }
       if(bx){ ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia'; ctx.fillText('X: banish',bx.x-30,bx.y-24); }
     }
-    // thorns hazard
-    thorns.forEach(t=>{ // bare spikes, no label
+    // E hint over a nearby loose tool
+    if(!won){
+      const t=nearTool();
+      if(t){ ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia'; ctx.fillText('E: take',t.x-6,t.y-12); }
+    }
+    // thorns hazard: bare spikes, no label
+    thorns.forEach(t=>{
       ctx.fillStyle='#cfc4a8';
       for(let x=t.x;x<t.x+t.w;x+=14){
         ctx.beginPath(); ctx.moveTo(x,t.y+t.h); ctx.lineTo(x+7,t.y-8); ctx.lineTo(x+14,t.y+t.h); ctx.closePath(); ctx.fill();
         ctx.strokeStyle='#2e3a68'; ctx.lineWidth=2; ctx.stroke();
       }
+    });
+    // swampy mud pools: dark water, glinting bubbles, red ring when it's got you
+    muds.forEach(m=>{
+      ctx.fillStyle='#3d7038'; ctx.beginPath(); ctx.ellipse(m.x+m.w/2,m.y+m.h/2,m.w/2,m.h/2,0,0,7); ctx.fill();
+      ctx.strokeStyle='#2e3a68'; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.fillStyle='#1f2a4a'; ctx.beginPath(); ctx.ellipse(m.x+m.w/2,m.y+m.h/2,m.w/3,m.h/3,0,0,7); ctx.fill();
+      ctx.fillStyle='#e8c96a';
+      const bt=performance.now()/700;
+      for(let i=0;i<3;i++){ const bx=m.x+20+i*30, by=m.y+m.h/2+Math.sin(bt+i*2)*3; ctx.beginPath(); ctx.arc(bx,by,2.5,0,7); ctx.fill(); }
+      if((m.sink||0)>1.2){ ctx.strokeStyle='#b3552e'; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(m.x+m.w/2,m.y+m.h/2,m.w/2+4,m.h/2+4,0,0,7); ctx.stroke(); }
     });
     // exit: detailed door lives in beat-1 decor; other beats get a paper arch
     if(beat.arch){
