@@ -193,7 +193,8 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     registry (per-chapter layout/ink/herb/dialogues/decor + update/E/draw
     hooks); pickups generalized (dust optional, free takes), NPCs
     (blocking goat), patrol swarms, ghost platforms, per-chapter dim light.
-    Chapters: goat bridge + chamomile (ink 15), swarm field + fennel
-    (ink 15), will-o'-wisp glamour + betony (ink 20, reveal-to-solidify).
+    Chapters: goat bridge + chamomile, swarm field + fennel, will-o'-wisp
+    glamour + betony (reveal-to-solidify) — ink 50 every chapter for now;
+    scarcity tuning comes later.
     Decor themes meadow/tallgrass/forest; chapters reunite into one journey
     later. Level schema gains `beat` + `blurb`.

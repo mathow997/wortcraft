@@ -226,7 +226,7 @@
   },
   level_02:{
     hud:'A/D move+push · Space jump · E use · T conjure · X banish · calm the goat, cross the bridge →',
-    world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:15,
+    world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'The stream is swift — take the bridge.',
     need:'chamomile', needName:'Chamomile', intro:'dialogue_b2_intro', pickup:'dialogue_b2_pickup', outro:'dialogue_b2_outro',
     decor:()=>Art.buildBeatDecor('meadow',{water:{x:1100,w:300}}), decorDy:0, arch:true, capAll:true,
@@ -266,7 +266,7 @@
   },
   level_03:{
     hud:'A/D move · Space jump · E use · T conjure · X banish · time the swarms or scatter them →',
-    world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:15,
+    world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'Watch your step in the tall grass.',
     need:'fennel', needName:'Fennel', intro:'dialogue_b3_intro', pickup:'dialogue_b3_pickup', outro:'dialogue_b3_outro',
     decor:()=>Art.buildBeatDecor('tallgrass',{}), decorDy:0, arch:true, capAll:true,
@@ -309,7 +309,7 @@
   },
   level_04:{
     hud:'A/D move · Space jump · E use · T conjure · X banish · betony burns the glamour →',
-    world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:20,
+    world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'The dark below is patient. Back you go.',
     need:'betony', needName:'Betony', intro:'dialogue_b4_intro', pickup:'dialogue_b4_pickup', outro:'dialogue_b4_outro',
     decor:()=>Art.buildBeatDecor('forest',{}), decorDy:0, arch:true, capAll:true, dim:true,
