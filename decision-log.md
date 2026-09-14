@@ -216,3 +216,10 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     high platform, 3 picks per plant; soothing burns one per goat, flute
     plays free. Meadow world taller (720px); paddock, hay bale, pail, and
     dragonflies added. Goats face travel direction.
+
+33. **Phase 3: taller swarm + forest.** Swarm field and forest edge go
+    720px tall. Fennel moves to an upper platform (4 picks; burning one per
+    permanent scatter, broom waves off for ~6s). Ghost path raised
+    (y240–300, ladder or balloon to reach the first stone); betony patch
+    yields 3, reveal burns one. Fixed two jump gaps that exceeded max jump
+    range on the swarm field.

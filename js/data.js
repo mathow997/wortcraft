@@ -58,7 +58,7 @@ dialogues:{
   dialogue_b2_intro:{id:"dialogue_b2_intro",speaker:"witch",lines:["Chamomile roots on the high meadow grass — higher than any apprentice can jump. Pick plenty; soothing burns it up fast.","The bridge goat charges anything it hasn't been soothed for, and a second one guards the path home.","No music? No matter. But goats love music, if your ink runs to a flute."]},
   dialogue_b2_pickup:{id:"dialogue_b2_pickup",speaker:"apprentice",lines:["Chamomile. Small flowers, soft hands.","Easy, now. Easy."]},
   dialogue_b2_outro:{id:"dialogue_b2_outro",speaker:"witch",lines:["Two herbs. The goat will dine out on this story for years.","East. The tall grass hums — mind it."]},
-  dialogue_b3_intro:{id:"dialogue_b3_intro",speaker:"witch",lines:["Fennel grows past the swarm field. They guard the tall grass jealously.","Time their drifting, or burn fennel to scatter them. Fennel fears no pest."]},
+  dialogue_b3_intro:{id:"dialogue_b3_intro",speaker:"witch",lines:["Fennel grows high past the swarm field. They guard the tall grass jealously.","Time their drifting, or burn fennel to scatter them. Fennel fears no pest."]},
   dialogue_b3_pickup:{id:"dialogue_b3_pickup",speaker:"apprentice",lines:["Fennel. Smell that — strength itself.","Now, through or around them."]},
   dialogue_b3_outro:{id:"dialogue_b3_outro",speaker:"witch",lines:["Three herbs. The field will buzz about you.","The forest edge lies ahead, and something there wears a borrowed shape."]},
   dialogue_b4_intro:{id:"dialogue_b4_intro",speaker:"witch",lines:["Betony. It waits past the forest edge, where a will-o'-wisp paints false paths.","Trust nothing that shimmers. Burn betony, and walk the real stone."]},

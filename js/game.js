@@ -309,10 +309,10 @@
   },
   level_03:{
     hud:'A/D move · Space jump · E take · U use · T conjure · X banish · time the swarms or scatter them →',
-    world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:50,
+    world:{x:0,y:-180,w:2600,h:720}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'Watch your step in the tall grass.',
     need:'fennel', needName:'Fennel', intro:'dialogue_b3_intro', pickup:'dialogue_b3_pickup', outro:'dialogue_b3_outro',
-    decor:()=>Art.buildBeatDecor('tallgrass',{}), decorDy:0, arch:true, capAll:true,
+    decor:()=>Art.buildBeatDecor('tallgrass',{},720,-180), decorDy:180, arch:true, capAll:true,
     hook:{
       update(dt){
         const t=performance.now()/1000;
@@ -352,11 +352,12 @@
     build(){
       solids=[
         {x:0,y:484,w:2600,h:120,id:'ground'},
-        {x:400,y:400,w:140,h:18},{x:700,y:330,w:140,h:18},
-        {x:1100,y:400,w:140,h:18},{x:1500,y:330,w:140,h:18},{x:1900,y:400,w:140,h:18},
+        {x:450,y:400,w:140,h:18},{x:700,y:330,w:140,h:18},
+        {x:700,y:200,w:140,h:18,id:'fenneltop'},
+        {x:1100,y:400,w:140,h:18},{x:1330,y:330,w:140,h:18},{x:1600,y:400,w:140,h:18},
       ];
       thorns=[{x:1250,y:468,w:120,h:16}];
-      pickups=[{x:755,y:292,w:30,h:38,label:'fennel',herbId:'fennel',dust:0,free:true}];
+      pickups=[{x:755,y:162,w:30,h:38,label:'fennel',herbId:'fennel',dust:0,free:true,yield:4}];
       npcs=[];
       swarms=[
         {x:1000,y:360,w:120,h:90,base:1000,range:150,speed:1.1,phase:0,dead:false},
@@ -367,16 +368,16 @@
   },
   level_04:{
     hud:'A/D move · Space jump · E take · U use · T conjure · X banish · betony burns the glamour →',
-    world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:50,
+    world:{x:0,y:-180,w:2600,h:720}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'The dark below is patient. Back you go.',
     need:'betony', needName:'Betony', intro:'dialogue_b4_intro', pickup:'dialogue_b4_pickup', outro:'dialogue_b4_outro',
-    decor:()=>Art.buildBeatDecor('forest',{}), decorDy:0, arch:true, capAll:true, dim:true,
+    decor:()=>Art.buildBeatDecor('forest',{},720,-180), decorDy:180, arch:true, capAll:true, dim:true,
     hook:{
       update(){
         const t=performance.now()/1000;
         const w=npcs[0];
         if(w && !w.dead){
-          w.x=w.base+Math.sin(t*0.9)*220; w.y=340+Math.sin(t*1.7)*50;
+          w.x=w.base+Math.sin(t*0.9)*220; w.y=240+Math.sin(t*1.7)*50;
           const c=playerCenter();
           if(Math.hypot(w.x-c.x,w.y-c.y)<34){ respawn('The apparition hurls you back!'); }
         }
@@ -388,7 +389,7 @@
           counts.betony--; buildInventory();
           revealed=true;
           const w=npcs[0]; if(w) w.dead=true;
-          for(let i=0;i<30;i++) fx.push({x:600+Math.random()*900,y:300+Math.random()*160,vx:(Math.random()-.5)*260,vy:-Math.random()*260,life:1});
+          for(let i=0;i<30;i++) fx.push({x:600+Math.random()*900,y:200+Math.random()*160,vx:(Math.random()-.5)*260,vy:-Math.random()*260,life:1});
           flashHint('Betony burns the glamour — real stone underfoot.');
         } else flashHint('Glamour shimmers on the path — the witch spoke of betony.');
       },
@@ -397,16 +398,16 @@
     build(){
       solids=[
         {x:0,y:484,w:600,h:120,id:'groundA'},
-        {x:640,y:400,w:120,h:16,id:'g1',ghost:true},
-        {x:820,y:340,w:120,h:16,id:'g2',ghost:true},
-        {x:1000,y:380,w:120,h:16,id:'g3',ghost:true},
-        {x:1180,y:400,w:120,h:16},
+        {x:640,y:300,w:120,h:16,id:'g1',ghost:true},
+        {x:820,y:240,w:120,h:16,id:'g2',ghost:true},
+        {x:1000,y:280,w:120,h:16,id:'g3',ghost:true},
+        {x:1180,y:300,w:120,h:16},
         {x:1400,y:484,w:1200,h:120,id:'groundB'},
         {x:1700,y:410,w:100,h:18},{x:1860,y:340,w:100,h:18},{x:2020,y:400,w:100,h:18},
       ];
       thorns=[];
-      pickups=[{x:250,y:446,w:30,h:38,label:'betony',herbId:'betony',dust:0,free:true}];
-      npcs=[{kind:'wisp',x:900,y:340,w:36,h:36,base:900,dead:false,solid:false}];
+      pickups=[{x:250,y:446,w:30,h:38,label:'betony',herbId:'betony',dust:0,free:true,yield:3}];
+      npcs=[{kind:'wisp',x:900,y:240,w:36,h:36,base:900,dead:false,solid:false}];
       swarms=[];
       exitArch={x:2450,y:364,w:70,h:120};
     }
