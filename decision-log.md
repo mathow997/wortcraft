@@ -164,3 +164,8 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     apprentice is now a paper doll: robe with torn hem and stitching,
     belt, satchel, boots, all 4 creation hairstyles, facing eyes, and a
     raised arm while carrying rope.
+
+26. **Scenery readability.** Placeholder rectangle hills replaced with
+    overlapping mound ellipses tucked behind the ground line, round-canopy
+    trees added to garden + home stretch, outdoor platforms get grass caps
+    so they read as turf-topped rather than bare bars.

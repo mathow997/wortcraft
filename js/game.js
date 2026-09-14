@@ -632,7 +632,11 @@
     ctx.clearRect(0,0,960,540);
     if(decor) ctx.drawImage(decor,Math.round(cam.x),Math.round(cam.y)+360,960,540,0,0,960,540);
     ctx.save(); ctx.translate(-cam.x,-cam.y);
-    solids.forEach(s=>{ if(s.id&&s.id.indexOf('ground')===0) return; Engine.paperRect(ctx,s.x,s.y,s.w,s.h,'#8a7a52'); }); // platforms only — art owns the ground
+    solids.forEach(s=>{
+      if(s.id&&s.id.indexOf('ground')===0) return;
+      Engine.paperRect(ctx,s.x,s.y,s.w,s.h,'#8a7a52'); // platforms only — art owns the ground
+      if(s.x<600||s.x>1860){ ctx.fillStyle='#8a9a5b'; ctx.fillRect(s.x,s.y,s.w,5); } // grass cap outdoors
+    });
     summons.forEach(s=>{ Engine.paperRect(ctx,s.x,s.y,s.w,s.h,s.c); ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(s.word+(GLYPH[s.b]?' '+GLYPH[s.b]:''),s.x+6,s.y+16); });
     // ropes: paper strokes, knots where tied, frayed loose ends
     for(const r of ropes){

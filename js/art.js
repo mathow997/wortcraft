@@ -97,6 +97,16 @@ function bush(g,x,y,w,h){
   g.strokeStyle=INK; g.lineWidth=2.5; g.stroke();
   dash(g,x-w+8,y-2,x+w-8,y-2,C.moss);
 }
+function tree(g,x,baseY,s){ // round-canopy tree: trunk + 4 canopy blobs
+  box(g,x-7*s,baseY-70*s,14*s,70*s,C.bark,false);
+  const blobs=[[0,-86,30],[-24,-64,22],[24,-66,24],[0,-48,26]];
+  blobs.forEach(([dx,dy,r],i)=>{
+    g.fillStyle=[C.leaf,C.moss,C.sage,C.leaf][i%4];
+    g.beginPath(); g.arc(x+dx*s,baseY+dy*s,r*s,0,7); g.fill();
+    g.strokeStyle=INK; g.lineWidth=2.5; g.stroke();
+  });
+  dash(g,x-20*s,baseY-66*s,x+20*s,baseY-66*s,C.moss);
+}
 
 function buildDecor(){
   const cv=document.createElement('canvas'); cv.width=3200; cv.height=900;
@@ -109,17 +119,19 @@ function buildDecor(){
   g.strokeStyle=INK; g.lineWidth=3; g.beginPath(); g.arc(2820,-160,26,0,7); g.stroke();
   cloud(g,250,-220,1); cloud(g,2100,-240,1.2); cloud(g,2600,-180,0.9); cloud(g,120,-80,0.7);
   bird(g,150,-100,1); bird(g,400,-160,1.2); bird(g,2200,-120,1); bird(g,2500,-200,1.1); bird(g,2900,-140,0.9);
-  for(let i=0;i<12;i++){ // paper hills
-    const hx=i*280+60, hw=200+((i*53)%80);
+  for(let i=0;i<14;i++){ // rolling paper hills, bases tucked behind the ground
+    const cx=i*260-40, rx=150+((i*67)%60), top=240+((i*41)%70);
     g.fillStyle=i%2?C.sage:C.leaf;
-    g.fillRect(hx,300-hw/3,hw,hw/3);
-    g.strokeStyle=INK; g.lineWidth=3; g.strokeRect(hx,300-hw/3,hw,hw/3);
+    g.beginPath(); g.ellipse(cx,470,rx,470-top,0,0,7); g.fill();
+    g.strokeStyle=INK; g.lineWidth=3; g.stroke();
+    dash(g,cx-rx+30,top+40,cx+rx-30,top+40,i%2?C.leaf:C.sage);
   }
   // soil base full width
   box(g,0,484,3200,56,C.clay,false);
   dash(g,0,500,3200,500,C.bark);
   // ---- garden 0-600: fence, tufts, flowers, mushrooms, watering can, seedlings ----
   g.fillStyle=C.sage; g.fillRect(0,458,600,26);
+  tree(g,140,458,0.9); tree(g,545,458,1);
   for(let x=30;x<580;x+=46){ box(g,x,392,12,72,C.bark,false); }
   box(g,20,400,560,8,C.clay,false); box(g,20,428,560,8,C.clay,false);
   for(let i=0;i<26;i++){
@@ -257,6 +269,7 @@ function buildDecor(){
   });
   // ---- home stretch: grass, fence, flowers, stones, bushes ----
   g.fillStyle=C.sage; g.fillRect(1860,458,1340,26);
+  tree(g,1975,458,1); tree(g,2620,458,1.1); tree(g,2880,458,0.9);
   for(let x=1900;x<3030;x+=180){ box(g,x,400,12,60,C.bark,false); }
   box(g,1890,408,1150,8,C.clay,false); box(g,1890,432,1150,8,C.clay,false);
   for(let i=0;i<40;i++){
