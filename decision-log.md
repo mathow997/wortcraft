@@ -242,3 +242,8 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     hemisphere) with a dotted trajectory preview + landing ring, click or
     `Space` looses. Fixed speed, gravity-matched preview, 1.6s flight
     before it clatters down as an object.
+
+37. **Locked vertical camera where it fits.** Chapters 2–4 play on one
+    screen height, so vertical follow is locked off there — no more bobbing
+    when hopping the high platforms above the swamp. Only the tall shed
+    (ch.1) scrolls vertically.

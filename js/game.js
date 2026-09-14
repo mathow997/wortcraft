@@ -253,7 +253,7 @@
     world:{x:0,y:-180,w:2600,h:720}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'The stream is swift — take the bridge.',
     need:'chamomile', needName:'Chamomile', intro:'dialogue_b2_intro', pickup:'dialogue_b2_pickup', outro:'dialogue_b2_outro',
-    decor:()=>Art.buildBeatDecor('meadow',{water:{x:1100,w:300}},720,-180), decorDy:180, arch:true, capAll:true,
+    decor:()=>Art.buildBeatDecor('meadow',{water:{x:1100,w:300}},720,-180), decorDy:180, lockY:0, arch:true, capAll:true,
     hook:{
       update(dt){
         for(const g of npcs){
@@ -322,7 +322,7 @@
     world:{x:0,y:-180,w:2600,h:720}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'Watch your step in the tall grass.',
     need:'fennel', needName:'Fennel', intro:'dialogue_b3_intro', pickup:'dialogue_b3_pickup', outro:'dialogue_b3_outro',
-    decor:()=>Art.buildBeatDecor('tallgrass',{},720,-180), decorDy:180, arch:true, capAll:true,
+    decor:()=>Art.buildBeatDecor('tallgrass',{},720,-180), decorDy:180, lockY:0, arch:true, capAll:true,
     hook:{
       update(dt){
         const t=performance.now()/1000;
@@ -385,7 +385,7 @@
     world:{x:0,y:-180,w:2600,h:720}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'The dark below is patient. Back you go.',
     need:'betony', needName:'Betony', intro:'dialogue_b4_intro', pickup:'dialogue_b4_pickup', outro:'dialogue_b4_outro',
-    decor:()=>Art.buildBeatDecor('forest',{},720,-180), decorDy:180, arch:true, capAll:true, dim:true,
+    decor:()=>Art.buildBeatDecor('forest',{},720,-180), decorDy:180, lockY:0, arch:true, capAll:true, dim:true,
     hook:{
       update(){
         const t=performance.now()/1000;
@@ -953,6 +953,10 @@
     }
   }
 
+  function snapCam(){
+    cam.follow(player.x+player.w/2, player.y+player.h/2, world);
+    if(beat.lockY!==undefined) cam.y=beat.lockY; // chapters that fit one screen never bob vertically
+  }
   function update(dt){
     // freeze movement while dialogue open (fixes Space-jump conflict + stuck feeling)
     if(dialogueOpen()){ render(); return; }
@@ -965,7 +969,7 @@
       if(keys['Space']){ releaseRope(false); keys['Space']=false; }
       else if(keys['KeyE']){ releaseRope(true); keys['KeyE']=false; }
       else updateRopeRider(dt);
-      cam.follow(player.x+player.w/2, player.y+player.h/2, world);
+      snapCam();
     } else {
     // movement
     const speed=260;
@@ -995,7 +999,7 @@
       }
     }
     keys['Space']=false;
-    cam.follow(player.x+player.w/2, player.y+player.h/2, world);
+    snapCam();
 
     // thorns reset (challenge)
     for(const t of thorns){
