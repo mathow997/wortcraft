@@ -230,7 +230,8 @@ Curated words live in data; unknown words fall back to a hashed parcel
 (size/color derived from the word) so *anything* typed still appears.
 `behavior` is one of `static` (platform), `float` (rises, carries rider),
 `heavy` (falls under gravity, lands), `bouncy` (trampolines the player),
-`climb` (scalable with W/S).
+`climb` (scalable with W/S). Grounded summons are pushable — walk into one
+to shove it (heavies shove slowly; floats drift instead).
 
 ## 4. Asset Manifest
 

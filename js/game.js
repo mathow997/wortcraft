@@ -211,6 +211,30 @@
 
   function allSolids(){ return solids.concat(summons); }
   function standingOn(p,s){ return p.y+p.h<=s.y+9 && p.y+p.h>=s.y-9 && p.x+p.w>s.x+2 && p.x<s.x+s.w-2; }
+  // pushing: walk into a grounded summon to shove it (ladder into place, plank over thorns).
+  // Floats drift on their own; heavies shove slowly once landed.
+  function pushable(s){
+    if(s.b==='float') return false;
+    if(s.b==='heavy') return s.resting;
+    return true;
+  }
+  function tryPush(dx){
+    if(!dx) return;
+    for(const s of summons){
+      if(!pushable(s)) continue;
+      const touching = dx>0
+        ? (player.x+player.w<=s.x+6 && player.x+player.w+Math.abs(dx)+3>=s.x && player.y+player.h>s.y+8 && player.y<s.y+s.h-4)
+        : (player.x>=s.x+s.w-6 && player.x-Math.abs(dx)-3<=s.x+s.w && player.y+player.h>s.y+8 && player.y<s.y+s.h-4);
+      if(!touching) continue;
+      const step=dx*(s.b==='heavy'?0.45:1);
+      const probe={x:s.x+step,y:s.y,w:s.w,h:s.h};
+      let blocked=false;
+      for(const o of solids.concat(summons.filter(q=>q!==s))){
+        if(Engine.overlap(probe,o)){ blocked=true; break; }
+      }
+      if(!blocked) s.x+=step;
+    }
+  }
 
   function updateSummons(dt){
     for(const s of summons){
@@ -225,7 +249,7 @@
         }
         if(blocked){ s.y+=45*dt; s.resting=true; }
         else if(riding){ player.y=s.y-player.h; player.vy=Math.min(0,player.vy); }
-      } else if(s.b==='heavy' && !s.resting){
+          } else if(s.b==='heavy' && !s.resting){
         s.vy+=2200*dt;
         let ny=s.y+s.vy*dt, hit=false;
         const probe={x:s.x,y:ny,w:s.w,h:s.h};
@@ -244,6 +268,16 @@
       }
     }
     // balloon-vs-sky cap: resting floats hover where stopped
+    // heavies re-check support (a shove off a ledge sets them falling again)
+    for(const s of summons){
+      if(s.b!=='heavy' || !s.resting) continue;
+      const probe={x:s.x+2,y:s.y+s.h,w:s.w-4,h:3};
+      let supported=false;
+      for(const o of solids.concat(summons.filter(q=>q!==s))){
+        if(Engine.overlap(probe,o)){ supported=true; break; }
+      }
+      if(!supported){ s.resting=false; s.vy=0; }
+    }
   }
 
   function update(dt){
@@ -256,6 +290,7 @@
     if(keys['ArrowLeft']||keys['KeyA']) player.vx=-speed;
     if(keys['ArrowRight']||keys['KeyD']) player.vx=speed;
     if((keys['Space']||keys['ArrowUp']||keys['KeyW'])&&player.onGround) player.vy=-780;
+    tryPush(player.vx*dt); // shove grounded summons before resolving player collision
     Engine.moveAndCollide(player,allSolids(),dt);
     // climb: scale ladder/rope/pole with W/S after physics
     const ladder=summons.find(s=>s.b==='climb' && Engine.overlap(player,{x:s.x-8,y:s.y-8,w:s.w+16,h:s.h+16}));
@@ -340,7 +375,7 @@
     ctx.restore();
     // HUD text
     ctx.fillStyle='#2e3a68'; ctx.font='14px Georgia';
-    ctx.fillText('A/D move · Space jump · E use · T conjure (ladder≡ balloon↑ anvil▼ ball~) · Beat 1: mugwort → smoke → EXIT', 12, 20);
+    ctx.fillText('A/D move+push · Space jump · E use · T conjure (ladder≡ balloon↑ anvil▼ ball~) · Beat 1: mugwort → smoke → EXIT', 12, 20);
     const nm=(store.char&&store.char.name)||'Apprentice';
     ctx.fillText(nm, 12, 40);
   }

@@ -113,3 +113,8 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     rider), `heavy` (anvil/boulder/barrel fall and land), `bouncy`
     (ball/cushion trampoline the player), `climb` (ladder/rope/pole scalable
     with W/S). Behavior glyphs (↑▼~≡) drawn on summoned objects.
+
+20. **Pushable summons.** Walking into a grounded conjured object shoves it,
+    so a ladder can be pushed into place under a ledge or a plank slid over
+    thorns. Heavies shove slowly and re-fall if pushed off a ledge; floats
+    can't be pushed (they drift).
