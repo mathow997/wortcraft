@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wortcraft — A medieval puzzle-platformer</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <!-- Title Screen (tech-spec §1) -->
+  <section id="screen-title" class="screen active">
+    <h1>WORTCRAFT</h1>
+    <p class="tagline">A medieval puzzle-platformer about herbcraft, folklore, and the making of a cure.</p>
+    <div class="menu">
+      <button data-action="new-game">New Game</button>
+      <button data-action="continue">Continue</button>
+      <button data-action="fieldbook" data-from="title">Field Book</button>
+      <button data-action="settings">Settings</button>
+    </div>
+  </section>
+
+  <!-- Character Creation (tech-spec §1.1) -->
+  <section id="screen-creation" class="screen">
+    <h2>Your Apprentice</h2>
+    <label>Name <input id="cc-name" type="text" maxlength="16" placeholder="Aldith"></label>
+    <button id="cc-randomize" type="button">Randomize</button>
+    <div class="picker-row">
+      <button id="cc-hair-prev" type="button">◀</button>
+      <canvas id="cc-preview" width="96" height="96"></canvas>
+      <button id="cc-hair-next" type="button">▶</button>
+    </div>
+    <p id="cc-hair-label">Hair 1/4</p>
+    <div id="cc-swatches" class="swatches"></div>
+    <button data-action="confirm-creation">Begin → World Map</button>
+  </section>
+
+  <!-- World Map (array-driven, tech-spec §1) -->
+  <section id="screen-map" class="screen">
+    <h2>World Map</h2>
+    <div id="map-nodes"></div>
+    <div class="menu">
+      <button data-action="fieldbook" data-from="map">Field Book</button>
+      <button data-action="to-title">Title</button>
+    </div>
+  </section>
+
+  <!-- Level -->
+  <section id="screen-level" class="screen">
+    <canvas id="game" width="960" height="540"></canvas>
+    <div id="hud">
+      <div id="inventory"></div>
+      <div id="spell-indicator"></div>
+      <div id="combine-prompt" class="hidden">Press <b>E</b> to use <span id="combine-name"></span></div>
+      <div id="summon-bar" class="hidden">Type: <input id="summon-input" type="text" placeholder="box / plank / stone" maxlength="16"> <span class="muted">(T to open, Enter to conjure, Esc to close · ink <span id="ink-count">3</span>)</span></div>
+      <button id="btn-pause">II</button>
+    </div>
+    <div id="dialogue" class="hidden"><p id="dialogue-text"></p><span class="hint">click / Space ▸</span></div>
+    <div id="overlay-beat4" class="hidden"></div>
+    <div id="overlay-beat9" class="hidden"></div>
+  </section>
+
+  <!-- Field Book (tech-spec §3.3/3.4) -->
+  <section id="screen-fieldbook" class="screen">
+    <h2>Field Book</h2>
+    <div id="fieldbook-list"></div>
+    <button data-action="fieldbook-back">Back</button>
+  </section>
+
+  <!-- Pause Menu -->
+  <div id="pause" class="hidden">
+    <div class="pause-box">
+      <h3>Paused</h3>
+      <button data-action="resume">Resume</button>
+      <button data-action="fieldbook" data-from="pause">Field Book</button>
+      <button data-action="restart">Restart Level</button>
+      <button data-action="settings">Settings</button>
+      <button data-action="quit-map">Quit to World Map</button>
+    </div>
+  </div>
+
+  <!-- Settings stub -->
+  <div id="settings" class="hidden">
+    <div class="pause-box">
+      <h3>Settings</h3>
+      <label><input type="checkbox" id="set-reduced" disabled> Reduced motion (v2)</label>
+      <p class="muted">Minimal for v1.</p>
+      <button data-action="settings-close">Close</button>
+    </div>
+  </div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

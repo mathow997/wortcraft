@@ -1,0 +1,292 @@
+// Wortcraft screens + vertical slice beat 1 (puzzle_01 tutorial_movement).
+(() => {
+  const $ = s => document.querySelector(s);
+  const screens = { title:$('#screen-title'), creation:$('#screen-creation'), map:$('#screen-map'), level:$('#screen-level'), fieldbook:$('#screen-fieldbook') };
+  let returnTo = 'title';
+  function show(name){ Object.values(screens).forEach(el=>el.classList.remove('active')); screens[name].classList.add('active'); }
+
+  const store = {
+    get char(){ try{return JSON.parse(localStorage.getItem('wort_char'));}catch{return null;} },
+    set char(v){ localStorage.setItem('wort_char', JSON.stringify(v)); },
+    get herbs(){ try{return JSON.parse(localStorage.getItem('wort_herbs'))||[];}catch{return[];} },
+    addHerb(id){ const h=this.herbs; if(!h.includes(id)){h.push(id); localStorage.setItem('wort_herbs',JSON.stringify(h));} }
+  };
+
+  // ---- character creation ----
+  let hairIdx = 0, colorIdx = 0;
+  const sw = $('#cc-swatches');
+  function drawPreview(){
+    const c=$('#cc-preview'), x=c.getContext('2d');
+    x.clearRect(0,0,96,96);
+    x.fillStyle='rgba(0,0,0,.25)'; x.fillRect(30,25,36,44);
+    x.fillStyle=WORT.colors[colorIdx]; x.fillRect(26,21,36,44); // robe tint layer (palette-mapped)
+    x.strokeStyle='#2e3a68'; x.lineWidth=3; x.strokeRect(26,21,36,44);
+    x.fillStyle='#d9b48f'; x.fillRect(34,8,20,18); // face (skin)
+    x.fillStyle='#3a2a1a';
+    const styles=[()=>x.fillRect(32,2,24,10),()=>{x.fillRect(28,2,32,8);x.fillRect(28,8,6,16);},()=>x.fillRect(30,0,28,14),()=>{x.fillRect(34,0,12,24);}];
+    styles[hairIdx]();
+    $('#cc-hair-label').textContent=`Hair ${hairIdx+1}/4`;
+  }
+  function buildSwatches(){
+    sw.innerHTML='';
+    WORT.colors.forEach((col,i)=>{ const d=document.createElement('div'); d.className='swatch'+(i===colorIdx?' sel':''); d.style.background=col;
+      d.onclick=()=>{colorIdx=i;buildSwatches();drawPreview();}; sw.appendChild(d); });
+  }
+  $('#cc-hair-prev').onclick=()=>{hairIdx=(hairIdx+3)%4;drawPreview();};
+  $('#cc-hair-next').onclick=()=>{hairIdx=(hairIdx+1)%4;drawPreview();};
+  $('#cc-randomize').onclick=()=>{ $('#cc-name').value=WORT.names[Math.floor(Math.random()*WORT.names.length)]; };
+  buildSwatches(); drawPreview();
+
+  // ---- world map (array-driven) ----
+  function buildMap(){
+    const box=$('#map-nodes'); box.innerHTML='';
+    WORT.levels.forEach(lv=>{
+      const d=document.createElement('div'); d.className='map-node';
+      d.innerHTML=`<b>${lv.title}</b><br><span class="muted">${lv.puzzles.length} puzzles · ${lv.settings.length} settings</span><br>`;
+      const b=document.createElement('button'); b.textContent='Play — Beat 1 (vertical slice)'; b.onclick=()=>startLevel();
+      d.appendChild(b); box.appendChild(d);
+    });
+  }
+
+  // ---- field book ----
+  function buildFieldbook(){
+    const box=$('#fieldbook-list'); box.innerHTML='';
+    const owned=store.herbs;
+    WORT.fieldbook.forEach(e=>{
+      const herb=WORT.herbs.find(h=>h.id===e.herbId);
+      const locked=!owned.includes(e.herbId);
+      const d=document.createElement('div'); d.className='map-node';
+      d.innerHTML=`<b>${locked?'???':herb.displayName}</b> ${e.isHistorical?'':'<span class="muted">(apprentice lore)</span>'}<br><span>${locked?'Not yet found.':e.text}</span>`;
+      box.appendChild(d);
+    });
+  }
+
+  // ---- dialogue ----
+  let dlgLines=[], dlgIdx=0, dlgDone=null;
+  function playDialogue(id, done){
+    const d=WORT.dialogues[id]; if(!d){done&&done();return;}
+    dlgLines=[...d.lines]; dlgIdx=0; dlgDone=done||null;
+    $('#dialogue').classList.remove('hidden'); showLine();
+  }
+  function showLine(){ $('#dialogue-text').textContent=(WORT.dialogues ? '' : '') + dlgLines[dlgIdx]; }
+  $('#dialogue').onclick=()=>{ advanceDialogue(); keys['Space']=false; };
+  function advanceDialogue(){
+    dlgIdx++;
+    keys['Space']=false;
+    if(dlgIdx>=dlgLines.length){ $('#dialogue').classList.add('hidden'); const f=dlgDone; dlgDone=null; f&&f(); }
+    else showLine();
+  }
+  function dialogueOpen(){ return !$('#dialogue').classList.contains('hidden'); }
+  addEventListener('keydown', e=>{ if(e.code==='Space' && dialogueOpen()){ e.preventDefault(); advanceDialogue(); } });
+
+  // ---- global buttons ----
+  document.addEventListener('click', e=>{
+    const a=e.target.closest('[data-action]'); if(!a) return;
+    const act=a.dataset.action;
+    if(act==='new-game') show('creation');
+    if(act==='continue'){ if(store.char) {buildMap();show('map');} else show('creation'); }
+    if(act==='confirm-creation'){
+      const name=$('#cc-name').value.trim()||'Aldith';
+      store.char={name,hairstyleId:WORT.hairstyles[hairIdx],clothingColor:WORT.colors[colorIdx]};
+      buildMap(); show('map');
+    }
+    if(act==='fieldbook'){ returnTo=a.dataset.from==='map'?'map':(a.dataset.from==='pause'?'level':($('#screen-map').classList.contains('active')?'map':'title')); buildFieldbook(); Object.values(screens).forEach(el=>el.classList.remove('active')); screens.fieldbook.classList.add('active'); }
+    if(act==='fieldbook-back'){ show(returnTo==='level'?'level':returnTo); if(returnTo==='level'){} }
+    if(act==='to-title') show('title');
+    if(act==='resume') $('#pause').classList.add('hidden');
+    if(act==='restart') { $('#pause').classList.add('hidden'); startLevel(); }
+    if(act==='quit-map'){ $('#pause').classList.add('hidden'); buildMap(); show('map'); stopLoop(); }
+    if(act==='settings') $('#settings').classList.remove('hidden');
+    if(act==='settings-close') $('#settings').classList.add('hidden');
+  });
+  $('#btn-pause').onclick=()=>$('#pause').classList.remove('hidden');
+
+  // ---- LEVEL: beat 1 vertical slice (harder + summon demo) ----
+  const canvas=$('#game'), ctx=canvas.getContext('2d');
+  const WORLD={x:0,y:0,w:1920,h:540};
+  const keys=Engine.makeInput();
+  const cam=Engine.makeCamera(960,540);
+  let player, solids, summons, herb, shadow, gateWall, exitArch, thorns, running=false, raf=0, hasMugwort=false, shadowGone=false, won=false, fx=[], ink=3;
+  // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
+  // v1 implementation: curated base + procedural fallback so unknown words still spawn.
+  const LEXICON={ box:[46,46,'#8a6a42'], crate:[52,52,'#8a6a42'], chest:[56,40,'#6a4a26'],
+    plank:[110,16,'#6a4a26'], bridge:[150,16,'#6a4a26'], ladder:[36,110,'#8a6a42'], beam:[130,20,'#8a6a42'],
+    stone:[60,30,'#9a9a92'], rock:[54,40,'#9a9a92'], boulder:[80,60,'#9a9a92'], step:[70,22,'#c9a44a'],
+    stairs:[90,60,'#c9a44a'], table:[80,40,'#8a6a42'], barrel:[44,60,'#7a4a1a'], ball:[36,36,'#b3552e'],
+    rope:[16,100,'#c9a44a'], pole:[16,110,'#6a4a26'], wall:[30,110,'#8a7a4a'], block:[50,50,'#cfc4a8'],
+    anvil:[70,44,'#1f2a4a'], boat:[110,30,'#6a4a26'], door:[40,90,'#6a4a26'], shield:[40,50,'#2e3a68'] };
+  function specFor(word){
+    if(LEXICON[word]) return {w:LEXICON[word][0],h:LEXICON[word][1],c:LEXICON[word][2]};
+    // fallback: hash word -> sized parcel so *anything* typed appears (Scribblenauts feel, zero-backend)
+    let hsh=0; for(const ch of word) hsh=(hsh*31+ch.charCodeAt(0))>>>0;
+    const w=34+(hsh%60), hh=24+(hsh%50);
+    const palette=['#8a6a42','#9a9a92','#c9a44a','#8a9a5b','#b3552e'];
+    return {w,h:hh,c:palette[hsh%palette.length],wild:true};
+  }
+  function stopLoop(){ running=false; cancelAnimationFrame(raf); }
+
+  function startLevel(){
+    show('level');
+    $('#summon-bar').classList.add('hidden');
+    player=Engine.physicsBody(60,420,28,44);
+    solids=[
+      {x:0,y:484,w:1920,h:56,id:'ground'},
+      {x:220,y:404,w:110,h:18},   // harder: narrower, higher gaps
+      {x:470,y:330,w:100,h:18},
+      {x:700,y:400,w:90,h:18},
+      {x:900,y:284,w:40,h:200,id:'gatewall'}, // blocking wall, removed on dispel
+    ];
+    summons=[];
+    herb={x:498,y:292,w:28,h:28,taken:false}; // above 2nd platform — needs precise jump
+    shadow={x:872,y:420,w:60,h:64};
+    gateWall=true;
+    exitArch={x:1200,y:364,w:70,h:120}; // visible EXIT goal
+    thorns=[{x:760,y:468,w:100,h:16}]; // ground hazard before gate — use platforms or summon over it
+    hasMugwort=false; shadowGone=false; won=false; fx=[]; ink=3; updateInk();
+    buildInventory();
+    playDialogue('dialogue_level01_intro');
+    running=true; let last=performance.now();
+    const loop=(t)=>{
+      if(!running) return;
+      const dt=Math.min(0.033,(t-last)/1000); last=t;
+      update(dt); render();
+      raf=requestAnimationFrame(loop);
+    };
+    cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+  }
+
+  function buildInventory(){
+    const inv=$('#inventory'); inv.innerHTML='';
+    WORT.herbs.filter(h=>h.id==='mugwort').forEach(h=>{
+      const d=document.createElement('div'); d.className='slot'+(hasMugwort?'':' locked'); d.textContent=h.icon; d.title=h.displayName;
+      inv.appendChild(d);
+    });
+    $('#spell-indicator').textContent = hasMugwort ? '✨ warding smoke ready (E)' : '';
+  }
+
+  function near(a,b,pad=80){ return Math.abs((a.x+a.w/2)-(b.x+b.w/2))<pad && Math.abs((a.y)-(b.y))<130; }
+  function updateInk(){ const el=$('#ink-count'); if(el) el.textContent=ink; }
+
+  // summon input wiring (T / Enter / Esc)
+  const summonInput=$('#summon-input');
+  addEventListener('keydown', e=>{
+    if(!screens.level.classList.contains('active')) return;
+    if(e.code==='KeyT' && document.activeElement!==summonInput && !won){
+      e.preventDefault(); $('#summon-bar').classList.remove('hidden'); summonInput.value=''; summonInput.focus();
+    }
+    if(e.code==='Escape' && document.activeElement===summonInput){ summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
+  });
+  summonInput.addEventListener('keydown', e=>{
+    e.stopPropagation();
+    if(e.key==='Enter'){
+      const word=summonInput.value.trim().toLowerCase();
+      conjure(word);
+      summonInput.value=''; summonInput.blur(); $('#summon-bar').classList.add('hidden');
+    }
+    if(e.key==='Escape'){ summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
+  });
+  function conjure(word){
+    if(ink<=0 || won) return;
+    if(!word){ flashHint('Type a noun, e.g. ladder, bridge, stone, boat.'); return; }
+    const spec=specFor(word);
+    if(summons.length>=3) summons.shift(); // max 3 live
+    summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,wild:spec.wild});
+    ink--; updateInk();
+    if(spec.wild) flashHint(`"${word}" appears, roughly. The ink doesn't quite know it.`);
+  }
+  let hintTimer=null;
+  function flashHint(msg){
+    $('#spell-indicator').textContent=msg;
+    clearTimeout(hintTimer);
+    hintTimer=setTimeout(buildInventory,1800);
+  }
+
+  function allSolids(){ return solids.concat(summons); }
+
+  function update(dt){
+    // freeze movement while dialogue open (fixes Space-jump conflict + stuck feeling)
+    if(dialogueOpen()){ render(); return; }
+    // movement
+    const speed=260;
+    player.vx=0;
+    if(keys['ArrowLeft']||keys['KeyA']) player.vx=-speed;
+    if(keys['ArrowRight']||keys['KeyD']) player.vx=speed;
+    if((keys['Space']||keys['ArrowUp']||keys['KeyW'])&&player.onGround) player.vy=-780;
+    Engine.moveAndCollide(player,allSolids(),dt);
+    keys['Space']=false;
+    cam.follow(player.x+player.w/2, player.y+player.h/2, WORLD);
+
+    // thorns reset (challenge)
+    for(const t of thorns){
+      if(Engine.overlap(player,t)){ player.x=60;player.y=380;player.vx=player.vy=0; flashHint('Thorns! Use the platforms or conjure a plank (T).'); break; }
+    }
+
+    // pickup
+    if(!herb.taken && Engine.overlap(player,herb)){
+      herb.taken=true; hasMugwort=true; store.addHerb('mugwort'); buildInventory();
+      playDialogue('dialogue_beat1_pickup');
+    }
+    // combine prompt
+    const showPrompt = hasMugwort && !shadowGone && near(player,shadow);
+    $('#combine-prompt').classList.toggle('hidden',!showPrompt);
+    if(showPrompt) $('#combine-name').textContent='warding smoke';
+    if(showPrompt && keys['KeyE']){
+      shadowGone=true;
+      gateWall=false;
+      solids=solids.filter(s=>s.id!=='gatewall'); // open gate — wall fully gone
+      for(let i=0;i<24;i++) fx.push({x:shadow.x+Math.random()*60,y:shadow.y+Math.random()*64,vx:(Math.random()-.5)*200,vy:-Math.random()*200,life:1});
+      keys['KeyE']=false;
+      flashHint('Gate open! Head right → through the stone arch.');
+    }
+    fx.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=300*dt;p.life-=dt;});
+    fx=fx.filter(p=>p.life>0);
+    // win: touch the visible exit arch (not an invisible x threshold)
+    if(shadowGone && Engine.overlap(player,exitArch) && !won){
+      won=true; stopLoop();
+      playDialogue('dialogue_level01_outro',()=>{buildMap();show('map');});
+    }
+    // fall back
+    if(player.y>700){ player.x=60;player.y=420;player.vx=player.vy=0; }
+    // E consumed per-frame guard
+    if(keys['KeyE'] && !showPrompt) keys['KeyE']=false;
+  }
+
+  function render(){
+    ctx.clearRect(0,0,960,540);
+    ctx.save(); ctx.translate(-cam.x,-cam.y);
+    // parallax paper sheets (bg/mid/fg)
+    Engine.paperRect(ctx,cam.x,cam.y-40,960,220,'#c9b98f');           // distant sheet
+    for(let i=0;i<6;i++) Engine.paperRect(ctx,i*340+40,cam.y+60+((i%2)*20),180,120,'#b7a67e'); // hills
+    solids.forEach(s=>Engine.paperRect(ctx,s.x,s.y,s.w,s.h,'#8a7a52')); // platforms/ground
+    summons.forEach(s=>{ Engine.paperRect(ctx,s.x,s.y,s.w,s.h,s.c||LEXICON[s.word][2]); ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(s.word,s.x+6,s.y+16); });
+    // thorns hazard
+    thorns.forEach(t=>{ Engine.paperRect(ctx,t.x,t.y,t.w,t.h,'#3d7038'); ctx.fillStyle='#e8dcc0'; ctx.font='12px serif'; ctx.fillText('▲▲▲ thorns',t.x+8,t.y+13); });
+    // gate wall vs open state
+    if(gateWall){ Engine.paperRect(ctx,900,284,40,200,'#6a4a26'); ctx.fillStyle='#e8dcc0'; ctx.font='12px Georgia'; ctx.fillText('✦',906,300); }
+    // visible exit arch
+    Engine.paperRect(ctx,exitArch.x,exitArch.y,exitArch.w,exitArch.h,'#c9a44a');
+    ctx.fillStyle='#2e3a68'; ctx.font='bold 14px Georgia'; ctx.fillText('EXIT →',exitArch.x-6,exitArch.y-10);
+    ctx.fillStyle='#2e3a68'; ctx.fillRect(exitArch.x+12,exitArch.y+20,46,80); // dark doorway
+    ctx.fillStyle='#e8c96a'; ctx.font='22px serif'; ctx.fillText('➔',exitArch.x+26,exitArch.y+68);
+    if(!herb.taken){ ctx.font='24px serif'; ctx.fillText('🌿',herb.x,herb.y+24); }
+    if(!shadowGone){
+      Engine.paperRect(ctx,shadow.x,shadow.y,shadow.w,shadow.h,'#1f2a4a');
+      ctx.fillStyle='#e8dcc0'; ctx.font='28px serif'; ctx.fillText('👁',shadow.x+14,shadow.y+42);
+      ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText('smoke it (E) after mugwort',shadow.x-40,shadow.y-10);
+    }
+    // player w/ clothing tint + hair
+    const ch=store.char||{clothingColor:'#b3552e'};
+    Engine.paperRect(ctx,player.x,player.y,player.w,player.h,ch.clothingColor);
+    ctx.fillStyle='#d9b48f'; ctx.fillRect(player.x+5,player.y-12,18,14);
+    ctx.fillStyle='#3a2a1a'; ctx.fillRect(player.x+4,player.y-16,20,8);
+    fx.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle='#f4ebd4';ctx.fillRect(p.x,p.y,6,6);ctx.globalAlpha=1;});
+    ctx.restore();
+    // HUD text
+    ctx.fillStyle='#2e3a68'; ctx.font='14px Georgia';
+    ctx.fillText('A/D move · Space jump · E use · T type-to-conjure · Beat 1: mugwort → smoke shadow → EXIT arch', 12, 20);
+    const nm=(store.char&&store.char.name)||'Apprentice';
+    ctx.fillText(nm, 12, 40);
+  }
+
+  buildMap();
+})();

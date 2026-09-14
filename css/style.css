@@ -1,0 +1,42 @@
+:root{
+  --parchment:#e8dcc0; --ink:#2e3a68; --accent:#b3552e; --moss:#5f8448; --gold:#d9a441;
+  --sage:#8a9a5b; --skin:#d9b48f; --bark:#6a4a26; --water:#3f7d9c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#1c2033;color:var(--ink);font-family:Georgia,serif}
+#app{max-width:1000px;margin:0 auto;padding:16px}
+.screen{display:none;background:var(--parchment);border:3px solid var(--ink);
+  box-shadow:6px 6px 0 rgba(0,0,0,.35);padding:20px;margin-bottom:16px}
+.screen.active{display:block}
+h1{letter-spacing:.35em}
+.tagline{font-style:italic}
+.menu button{display:block;margin:8px 0;min-width:220px}
+button{background:var(--parchment);border:2px solid var(--ink);padding:8px 14px;
+  font-family:inherit;cursor:pointer;box-shadow:3px 3px 0 rgba(0,0,0,.35)}
+button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.35)}
+#game{width:100%;background:#d9c9a3;border:3px solid var(--ink);image-rendering:pixelated}
+#hud{display:flex;align-items:center;gap:12px;margin-top:8px}
+#inventory{display:flex;gap:6px}
+.slot{width:40px;height:40px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;
+  font-size:20px;background:#cbbb92;box-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.slot.locked{opacity:.35;filter:grayscale(1)}
+#combine-prompt{background:#fff8;border:2px solid var(--ink);padding:6px 10px}
+#summon-bar{background:#f4ebd4;border:2px solid var(--ink);padding:6px 10px}
+#summon-input{font-family:inherit;border:2px solid var(--ink);padding:4px 8px;width:160px;background:#fff}
+.hidden{display:none!important}
+#dialogue{border:3px solid var(--ink);background:#f4ebd4;padding:10px;margin-top:8px;
+  box-shadow:4px 4px 0 rgba(0,0,0,.3);cursor:pointer}
+#dialogue .hint{font-size:.8em;opacity:.6}
+#pause,#settings{position:fixed;inset:0;background:rgba(20,22,40,.6);display:flex;
+  align-items:center;justify-content:center}
+.pause-box{background:var(--parchment);border:3px solid var(--ink);padding:20px;
+  box-shadow:6px 6px 0 rgba(0,0,0,.4)}
+.pause-box button{display:block;margin:6px 0;min-width:240px}
+.swatches{display:flex;gap:8px;margin:10px 0}
+.swatch{width:32px;height:32px;border:2px solid var(--ink);cursor:pointer}
+.swatch.sel{outline:3px solid var(--gold)}
+#map-nodes{display:flex;gap:12px}
+.map-node{border:2px solid var(--ink);padding:12px;min-width:180px;background:#f4ebd4}
+.map-node.locked{opacity:.4}
+.muted{opacity:.6;font-size:.9em}
+.picker-row{display:flex;align-items:center;gap:10px;margin-top:10px}
