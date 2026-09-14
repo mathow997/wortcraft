@@ -196,5 +196,16 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     Chapters: goat bridge + chamomile, swarm field + fennel, will-o'-wisp
     glamour + betony (reveal-to-solidify) — ink 50 every chapter for now;
     scarcity tuning comes later.
+
+31. **Phase 1 systems: use-key, tools, consumables, medieval filter.**
+    `U` uses the right thing on the nearby problem (hook.use per chapter);
+    `E` takes/interacts. Handheld tools (cloth/music/broom via flute, pipe,
+    horn, lute, harp, broom, cloth words) max 2 held, double-tap `E` sets
+    the oldest down. Herbs are counted with per-plant yields; soothing,
+    scattering, and revealing consume one. Music notes + burn fx added.
+    Lexicon +13 medieval objects (torch, lantern, stool, bucket, basket,
+    sack, bell, drum, banner, book, candle, staff, wheel) with sprites;
+    ~40 modern words refused with "It's 1178 — what's a ___?" (no ink
+    spent).
     Decor themes meadow/tallgrass/forest; chapters reunite into one journey
     later. Level schema gains `beat` + `blurb`.

@@ -104,7 +104,8 @@
   const MAX_INK=50; // conjuring budget per run; banishing refunds 1
   let world={x:0,y:-360,w:3200,h:900};
   let beat=null; // current BEATS entry
-  let player, solids, summons, ropes, pickups, npcs, swarms, checkpoint, exitArch, thorns, running=false, raf=0, have=false, hasCloth=false, revealed=false, won=false, fx=[], ink=MAX_INK, climbT=0, decor=null, facing=1;
+  let player, solids, summons, ropes, pickups, npcs, swarms, checkpoint, exitArch, thorns, running=false, raf=0, counts={}, tools=[], lastE=0, hasCloth=false, revealed=false, won=false, fx=[], ink=MAX_INK, climbT=0, decor=null, facing=1;
+  function have(){ return (counts[beat.need]||0)>0; } // beat herb carried this run
   const grabbed={rope:null,idx:0,cd:0}; // rope rider state
   const carried={rope:null,end:'last'}; // carried loose end (pick up + move before tying)
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
@@ -120,7 +121,17 @@
     ladder:['#8a6a42',36,110,'climb'], pole:['#6a4a26',16,110,'climb'],
     balloon:['#b3552e',44,58,'float'], cloud:['#f5efdd',90,36,'float'],
     anvil:['#1f2a4a',70,44,'heavy'], boulder:['#9a9a92',80,60,'heavy'], barrel:['#7a4a1a',44,60,'heavy'],
-    ball:['#b3552e',36,36,'bouncy'], cushion:['#8a9a5b',56,24,'bouncy'] };
+    ball:['#b3552e',36,36,'bouncy'], cushion:['#8a9a5b',56,24,'bouncy'],
+    torch:['#6a4a26',18,56,'static'], lantern:['#3f7d9c',26,40,'static'],
+    stool:['#8a6a42',40,32,'static'], bucket:['#9a9a92',30,30,'static'],
+    basket:['#c9a44a',44,30,'static'], sack:['#cfc4a8',40,48,'static'],
+    bell:['#d9a441',30,34,'static'], drum:['#b3552e',46,34,'bouncy'],
+    banner:['#b3552e',26,90,'static'], book:['#1f2a4a',30,22,'static'],
+    candle:['#f5efdd',14,30,'static'], staff:['#6a4a26',12,120,'static'],
+    wheel:['#8a6a42',50,50,'static'] };
+  // the charm is old: modern words are refused, not spawned
+  const REJECT=['car','truck','van','bus','phone','computer','laptop','tablet','gun','rifle','pistol','bomb','tank','plane','airplane','helicopter','jet','rocket','robot','plastic','hazmat','spray','fan','engine','motor','battery','bulb','lightbulb','tv','television','radio','camera','bicycle','bike','motorcycle','tractor','laser','refrigerator','microwave','toilet','jeans','sneakers','train'];
+  const REJECT_QUIPS=['The ink blots and refuses.','The charm has never heard of such a thing.','A monk faints somewhere.','The page itself seems offended.'];
   const GLYPH={static:'',float:'↑',heavy:'▼',bouncy:'~',climb:'≡',rope:'➰'};
   // ropelike words simulate as Verlet strands (see rope system below), not solids
   const ROPE_WORDS={
@@ -165,7 +176,7 @@
     }
     if(!n.calmed && Math.hypot((bx+32)-near.x,(by+28)-near.y)<150){
       ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia';
-      ctx.fillText(have?'E: soothe':'a startled goat!',bx-6,by-12);
+      ctx.fillText((tools.includes('music')||(counts.chamomile||0)>0)?'U: soothe':'needs soothing…',bx-6,by-12);
     }
   }
   function g2m(c,x,y){ c.moveTo(x,y); c.lineTo(x-7,y-6); }
@@ -195,7 +206,7 @@
   // ---- beats: each chapter is data + a builder + hooks into the shared engine ----
   const BEATS={
   level_01:{
-    hud:'A/D move+push · Space jump · E wipe/use/grab/tie · T conjure · X banish · find mugwort, take it home →',
+    hud:'A/D move+push · Space jump · E wipe/take/grab/tie · U use · T conjure · X banish · find mugwort, take it home →',
     world:{x:0,y:-360,w:3200,h:900}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'Mind the gap! Conjure a bridge (T) or hop the islands.',
     need:'mugwort', needName:'Mugwort', intro:'dialogue_level01_intro', pickup:'dialogue_beat1_pickup', outro:'dialogue_level01_outro',
@@ -225,7 +236,7 @@
     }
   },
   level_02:{
-    hud:'A/D move+push · Space jump · E use · T conjure · X banish · calm the goat, cross the bridge →',
+    hud:'A/D move+push · Space jump · E take · U use · T conjure · X banish · calm the goat, cross the bridge →',
     world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'The stream is swift — take the bridge.',
     need:'chamomile', needName:'Chamomile', intro:'dialogue_b2_intro', pickup:'dialogue_b2_pickup', outro:'dialogue_b2_outro',
@@ -237,14 +248,19 @@
         if(g.calmed && g.slide<80){ g.x+=60*dt; g.slide+=60*dt; }
       },
       onE(){
-        const g=npcs[0]; if(!g||g.calmed) return false;
+        const g=npcs.find(n=>n.kind==='goat'&&!n.calmed); if(!g) return false;
         const c=playerCenter();
         if(Math.hypot((g.x+g.w/2)-c.x,(g.y+g.h/2)-c.y)>130) return false;
-        if(have){ g.calmed=true; g.solid=false;
-          for(let i=0;i<16;i++) fx.push({x:g.x+Math.random()*g.w,y:g.y,vx:(Math.random()-.5)*120,vy:-Math.random()*160,life:.8});
-          flashHint('The goat sighs and settles. The bridge is yours.');
-        } else flashHint('It stamps and snorts — something soothing might calm it.');
+        flashHint('It stamps and snorts. Press U to use something soothing.');
         return true;
+      },
+      use(){
+        const c=playerCenter();
+        const g=npcs.find(n=>n.kind==='goat'&&!n.calmed&&Math.hypot((n.x+n.w/2)-c.x,(n.y+n.h/2)-c.y)<150);
+        if(!g){ flashHint('Nothing here needs using.'); return; }
+        if(tools.includes('music')){ playMusic(g); sootheGoat(g); }
+        else if((counts.chamomile||0)>0){ counts.chamomile--; burnHerb(g); sootheGoat(g); if(!counts.chamomile) flashHint('Out of chamomile — pick more.'); }
+        else flashHint('The goat needs soothing — chamomile, or music (U).');
       },
       draw(){ const g=npcs[0]; if(g) drawGoat(g); }
     },
@@ -265,15 +281,17 @@
     }
   },
   level_03:{
-    hud:'A/D move · Space jump · E use · T conjure · X banish · time the swarms or scatter them →',
+    hud:'A/D move · Space jump · E take · U use · T conjure · X banish · time the swarms or scatter them →',
     world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'Watch your step in the tall grass.',
     need:'fennel', needName:'Fennel', intro:'dialogue_b3_intro', pickup:'dialogue_b3_pickup', outro:'dialogue_b3_outro',
     decor:()=>Art.buildBeatDecor('tallgrass',{}), decorDy:0, arch:true, capAll:true,
     hook:{
-      update(){
+      update(dt){
         const t=performance.now()/1000;
         for(const s of swarms){
+          if(s.dead&&s.back){ s.back-=dt; if(s.back<=0){ s.dead=false; s.back=0;
+            for(let i=0;i<8;i++) fx.push({x:s.x+Math.random()*s.w,y:s.y+Math.random()*s.h,vx:(Math.random()-.5)*100,vy:-Math.random()*100,life:.6}); } }
           if(s.dead) continue;
           s.x=s.base+Math.sin(t*s.speed+s.phase)*s.range;
           if(Engine.overlap(player,{x:s.x-10,y:s.y-10,w:s.w+20,h:s.h+20})){ respawn('The swarm drives you back!'); break; }
@@ -283,11 +301,24 @@
         const c=playerCenter();
         const s=swarms.find(s=>!s.dead && Math.hypot((s.x+s.w/2)-c.x,(s.y+s.h/2)-c.y)<110);
         if(!s) return false;
-        if(have){ s.dead=true;
+        flashHint('It seethes. U: wave a broom off, or burn fennel to end it.');
+        return true;
+      },
+      use(){
+        const c=playerCenter();
+        const s=swarms.find(s=>!s.dead && Math.hypot((s.x+s.w/2)-c.x,(s.y+s.h/2)-c.y)<130);
+        if(!s){ flashHint('Nothing here needs using.'); return; }
+        if(tools.includes('broom')){
+          s.dead=true; s.back=6;
+          for(let i=0;i<10;i++) fx.push({x:s.x+s.w/2+(Math.random()-.5)*60,y:s.y+s.h/2+(Math.random()-.5)*40,vx:(Math.random()-.5)*260,vy:(Math.random()-.5)*120,life:.6});
+          flashHint('Waved off — it will be back. Fennel ends it for good.');
+        }
+        else if((counts.fennel||0)>0){ counts.fennel--; burnHerb(s); s.dead=true; s.back=0;
           for(let i=0;i<20;i++) fx.push({x:s.x+Math.random()*s.w,y:s.y+Math.random()*s.h,vx:(Math.random()-.5)*220,vy:-Math.random()*220,life:.8});
           flashHint('The swarm scatters on the fennel smoke.');
-        } else flashHint('Teeth and wings everywhere — fennel would scatter them.');
-        return true;
+          if(!counts.fennel) flashHint('Out of fennel — pick more.');
+        }
+        else flashHint('Teeth and wings — fennel, or a broom to wave (U).');
       },
       draw(){ const t=performance.now()/1000; for(const s of swarms) if(!s.dead) drawSwarm(s,t); }
     },
@@ -308,7 +339,7 @@
     }
   },
   level_04:{
-    hud:'A/D move · Space jump · E use · T conjure · X banish · betony burns the glamour →',
+    hud:'A/D move · Space jump · E take · U use · T conjure · X banish · betony burns the glamour →',
     world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'The dark below is patient. Back you go.',
     need:'betony', needName:'Betony', intro:'dialogue_b4_intro', pickup:'dialogue_b4_pickup', outro:'dialogue_b4_outro',
@@ -323,15 +354,16 @@
           if(Math.hypot(w.x-c.x,w.y-c.y)<34){ respawn('The apparition hurls you back!'); }
         }
       },
-      onE(){
-        if(revealed || player.x<400) return false;
-        if(have){
+      onE(){ return false; },
+      use(){
+        if(revealed || player.x<400){ flashHint('Nothing here needs using.'); return; }
+        if((counts.betony||0)>0){
+          counts.betony--; buildInventory();
           revealed=true;
           const w=npcs[0]; if(w) w.dead=true;
           for(let i=0;i<30;i++) fx.push({x:600+Math.random()*900,y:300+Math.random()*160,vx:(Math.random()-.5)*260,vy:-Math.random()*260,life:1});
           flashHint('Betony burns the glamour — real stone underfoot.');
         } else flashHint('Glamour shimmers on the path — the witch spoke of betony.');
-        return true;
       },
       draw(){ const w=npcs[0]; if(w&&!w.dead) drawWisp(w,performance.now()/1000); }
     },
@@ -365,7 +397,7 @@
     player=Engine.physicsBody(beat.spawn.x,beat.spawn.y,28,44);
     solids=[]; thorns=[]; pickups=[]; npcs=[]; swarms=[]; summons=[]; ropes=[];
     grabbed.rope=null; grabbed.cd=0; carried.rope=null; climbT=0;
-    have=false; hasCloth=false; revealed=false; won=false; fx=[]; ink=beat.ink; updateInk();
+    counts={}; tools=[]; hasCloth=false; revealed=false; won=false; fx=[]; ink=beat.ink; updateInk();
     exitArch={...beat.exit};
     beat.build();
     decor=beat.decor();
@@ -384,16 +416,18 @@
   function herbIcon(id){ const h=WORT.herbs.find(h=>h.id===id); return h?h.icon:'🌿'; }
   function buildInventory(){
     const inv=$('#inventory'); inv.innerHTML='';
-    WORT.herbs.filter(h=>store.herbs.includes(h.id)).forEach(h=>{
-      const d=document.createElement('div'); d.className='slot'; d.textContent=h.icon; d.title=h.displayName;
+    WORT.herbs.filter(h=>(counts[h.id]||0)>0).forEach(h=>{
+      const d=document.createElement('div'); d.className='slot'; d.textContent=h.icon; d.title=h.displayName+(counts[h.id]>1?' ×'+counts[h.id]:'');
+      if(counts[h.id]>1){ const b=document.createElement('b'); b.textContent='×'+counts[h.id]; b.style.cssText='font-size:10px'; d.appendChild(b); }
       inv.appendChild(d);
     });
-    if(beat && !have){
+    if(beat && !(counts[beat.need]>0)){
       const d=document.createElement('div'); d.className='slot locked'; d.textContent=herbIcon(beat.need); d.title=beat.needName;
       inv.appendChild(d);
     }
-    if(hasCloth){ const d=document.createElement('div'); d.className='slot'; d.textContent='🧽'; d.title='Cloth'; inv.appendChild(d); }
-    $('#spell-indicator').textContent = (beat && have) ? `${herbIcon(beat.need)} ${beat.need} — take it east →` : '';
+    const TOOL_ICON={cloth:'🧽',music:'🎶',broom:'🧹'};
+    tools.forEach(t=>{ const d=document.createElement('div'); d.className='slot'; d.textContent=TOOL_ICON[t]||'?'; d.title=t; inv.appendChild(d); });
+    $('#spell-indicator').textContent = (beat && (counts[beat.need]>0)) ? `${herbIcon(beat.need)} ${beat.need} — take it east →` : '';
   }
 
   function near(a,b,pad=80){ return Math.abs((a.x+a.w/2)-(b.x+b.w/2))<pad && Math.abs((a.y)-(b.y))<130; }
@@ -417,8 +451,22 @@
     }
     if(e.key==='Escape'){ summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
   });
-  // cleaning supplies: conjuring one equips it (held, costs ink, no live slot)
-  const CLEAN_WORDS=['cloth','rag','sponge','brush','duster'];
+  // handheld tools: cloth wipes, music soothes, broom waves off. Two hands, two tools.
+  const TOOL_KIND={cloth:'cloth',rag:'cloth',sponge:'cloth',brush:'cloth',duster:'cloth',flute:'music',pipe:'music',horn:'music',lute:'music',harp:'music',broom:'broom'};
+  function equipTool(kind,word){
+    if(tools.includes(kind)){ flashHint('Already carrying that.'); return; }
+    if(tools.length>=2){ flashHint('Hands full — double-tap E to set something down.'); return; }
+    tools.push(kind); if(kind==='cloth') hasCloth=true;
+    buildInventory(); ink--; updateInk();
+    flashHint(`"${word}" in hand.`+(kind==='cloth'?' Wipe the jars (E).':(kind==='music'?' Press U to play it.':' Press U to wave it.')));
+  }
+  function dropTool(){
+    const t=tools.shift(); if(!t) return;
+    if(t==='cloth') hasCloth=false;
+    buildInventory();
+    for(let i=0;i<8;i++) fx.push({x:player.x+Math.random()*player.w,y:player.y,vx:(Math.random()-.5)*100,vy:-Math.random()*100,life:.5});
+    flashHint(`Set down the ${t}.`);
+  }
   function banish(){ // X: remove the nearest conjured thing, refund 1 ink
     if(won || dialogueOpen()) return;
     const c=playerCenter();
@@ -446,15 +494,36 @@
     if(document.activeElement===summonInput) return;
     banish();
   });
+  addEventListener('keydown', e=>{
+    if(e.code!=='KeyU' || !screens.level.classList.contains('active')) return;
+    if(document.activeElement===summonInput) return;
+    useItem();
+  });
+  function useItem(){ // U: use a held tool or carried herb on the problem at hand
+    if(won || dialogueOpen()) return;
+    if(beat.hook.use) beat.hook.use();
+    else flashHint('Nothing here needs using.');
+  }
+  function playMusic(target){ // notes drift from player to listener
+    for(let i=0;i<8;i++) fx.push({x:player.x+player.w/2-30+i*9,y:player.y-12-i*11,txt:i%2?'♪':'♫',vx:24,vy:-36,life:1.4,float:true});
+  }
+  function burnHerb(target){
+    for(let i=0;i<12;i++) fx.push({x:target.x+Math.random()*target.w,y:target.y+Math.random()*12,vx:(Math.random()-.5)*60,vy:-Math.random()*80,life:.9});
+    buildInventory();
+  }
+  function sootheGoat(g){
+    g.calmed=true; g.solid=false;
+    for(let i=0;i<16;i++) fx.push({x:g.x+Math.random()*g.w,y:g.y,vx:(Math.random()-.5)*120,vy:-Math.random()*160,life:.8});
+    flashHint('The goat sighs and settles.');
+  }
   function conjure(word){
     if(ink<=0 || won) return;
     if(!word){ flashHint('Type a noun, e.g. ladder, cloth, rope, balloon.'); return; }
-    if(CLEAN_WORDS.includes(word)){
-      if(hasCloth){ flashHint('Already carrying a cloth.'); return; }
-      hasCloth=true; buildInventory(); ink--; updateInk();
-      flashHint(`"${word}" in hand — wipe the pickups (E).`);
+    if(REJECT.includes(word)){
+      flashHint(`It's 1178 — what's a ${word}? `+REJECT_QUIPS[Math.floor(Math.random()*REJECT_QUIPS.length)]);
       return;
     }
+    if(TOOL_KIND[word]){ equipTool(TOOL_KIND[word],word); return; }
     const spec=specFor(word);
     if(spec.rope){ spawnRope(word,spec); }
     else {
@@ -662,13 +731,14 @@
     if(e){
       const p=e.rope.pts[e.endIdx];
       const t=findTieTarget(e,p);
-      if(t){ doTie(e,t); return; }
+      if(t){ doTie(e,t); return true; }
       carried.rope=e.rope; carried.end=e.end;
       flashHint(`Carrying the ${e.rope.word} — walk it over, E ties or drops.`);
-      return;
+      return true;
     }
     const n=nearestRopePoint(c,48);
-    if(n) grabRope(n.rope,n.idx);
+    if(n){ grabRope(n.rope,n.idx); return true; }
+    return false;
   }
   function carryTieOrDrop(){
     const r=carried.rope; if(!r){ return; }
@@ -703,10 +773,12 @@
       j.dust--;
       for(let i=0;i<6;i++) fx.push({x:j.x+Math.random()*j.w,y:j.y+Math.random()*j.h,vx:(Math.random()-.5)*90,vy:-Math.random()*90,life:.5});
       if(j.dust===0) flashHint(`Wiped clean — the label reads "${j.label}".`);
-    } else if(j.herbId===beat.need && !have){
-      have=true; store.addHerb(j.herbId); buildInventory();
-      pickups.splice(pickups.indexOf(j),1);
-      playDialogue(beat.pickup);
+    } else if(j.herbId===beat.need){
+      counts[j.herbId]=(counts[j.herbId]||0)+1;
+      if(counts[j.herbId]===1) playDialogue(beat.pickup);
+      store.addHerb(j.herbId); buildInventory();
+      if(j.yield!==undefined){ j.yield--; if(j.yield<=0) pickups.splice(pickups.indexOf(j),1); }
+      else pickups.splice(pickups.indexOf(j),1);
     } else if(j.herbId!==beat.need){
       flashHint(`${j.label[0].toUpperCase()+j.label.slice(1)} — the charm asks for ${beat.need}. Leave it.`);
     }
@@ -829,18 +901,22 @@
     $('#combine-prompt').classList.toggle('hidden',!pickup);
     if(pickup) $('#combine-name').textContent=(pickup.dust>0&&!pickup.free&&!hasCloth)?'a cloth first (T)':(pickup.dust>0?'wipe':'take');
     if(keys['KeyE'] && grabbed.cd<=0){
-      if(pickup) wipePickup(pickup);
-      else if(beat.hook.onE && beat.hook.onE()){}
-      else if(carried.rope) carryTieOrDrop();
-      else ropeInteract();
+      let acted=false;
+      if(pickup){ wipePickup(pickup); acted=true; }
+      else if(beat.hook.onE && beat.hook.onE()){ acted=true; }
+      else if(carried.rope){ carryTieOrDrop(); acted=true; }
+      else { acted=ropeInteract(); }
+      const nowT=performance.now();
+      if(!acted && tools.length && nowT-lastE<350) dropTool(); // double-tap E: set something down
+      lastE=nowT;
       keys['KeyE']=false;
     }
     } // end on-foot branch (rope rider handled above)
-    fx.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=300*dt;p.life-=dt;});
+    fx.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;if(!p.float)p.vy+=300*dt;p.life-=dt;});
     fx=fx.filter(p=>p.life>0);
     // win: bring the beat herb through the exit
     if(Engine.overlap(player,exitArch) && !won){
-      if(!have) flashHint(`The charm needs the ${beat.need} first.`);
+      if(!have()) flashHint(`The charm needs the ${beat.need} first.`);
       else { won=true; stopLoop(); playDialogue(beat.outro,()=>{buildMap();show('map');}); }
     }
     // fall back: back to checkpoint
@@ -939,7 +1015,7 @@
     const ch=store.char||{clothingColor:'#b3552e',hairstyleId:'hair_01'};
     const hairIdx=Math.max(0,Math.min(3,(parseInt((ch.hairstyleId||'hair_01').slice(-2),10)||1)-1));
     Art.drawApprentice(ctx,player.x,player.y,player.w,player.h,ch.clothingColor,hairIdx,facing,!!carried.rope);
-    fx.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle='#f4ebd4';ctx.fillRect(p.x,p.y,6,6);ctx.globalAlpha=1;});
+    fx.forEach(p=>{ctx.globalAlpha=Math.max(0,Math.min(1,p.life));if(p.txt){ctx.fillStyle='#2e3a68';ctx.font='16px Georgia';ctx.fillText(p.txt,p.x,p.y);}else{ctx.fillStyle='#f4ebd4';ctx.fillRect(p.x,p.y,6,6);}ctx.globalAlpha=1;});
     ctx.restore();
     if(beat.dim){ // forest dark: flat wash with a lit ring around the apprentice
       ctx.fillStyle='rgba(31,42,74,.45)';

@@ -532,6 +532,80 @@ function drawSummon(g,s,glyph){
     W(C.parch); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
     W(C.bark); g.fillRect(x,y,6,h); g.fillRect(x+w-6,y,6,h);
     for(let ry=y+8;ry<y+h-4;ry+=10) dash(g,x+8,ry,x+w-8,ry+4,ry%20?C.clay:C.bark);
+  } else if(word==='torch'){
+    W(C.bark); g.fillRect(cx-4,y+8,8,h-8); O(); g.strokeRect(cx-4,y+8,8,h-8);
+    W(C.clay); g.fillRect(cx-7,y+4,14,8); O(2); g.strokeRect(cx-7,y+4,14,8);
+    W(C.must); g.beginPath(); g.moveTo(cx-7,y+4); g.lineTo(cx,y-12); g.lineTo(cx+7,y+4); g.closePath(); g.fill();
+    W(C.honey); g.beginPath(); g.moveTo(cx-3,y+3); g.lineTo(cx,y-6); g.lineTo(cx+3,y+3); g.closePath(); g.fill();
+  } else if(word==='lantern'){
+    W(C.night); g.fillRect(x,y+6,w,h-6); O(); g.strokeRect(x,y+6,w,h-6);
+    W(C.honey); g.fillRect(x+6,y+12,w-12,h-18);
+    W(C.bark); g.fillRect(x-2,y,w+4,8); O(2); g.strokeRect(x-2,y,w+4,8);
+    g.fillStyle='rgba(232,201,106,.25)'; g.beginPath(); g.arc(cx,y+h/2,26,0,7); g.fill();
+    dash(g,cx,y-8,cx,y-2,INK);
+  } else if(word==='stool'){
+    W(C.bark); g.fillRect(x,y,w,9); O(); g.strokeRect(x,y,w,9);
+    W(C.clay); g.fillRect(x+4,y+9,7,h-9); g.fillRect(x+w-11,y+9,7,h-9); O(2);
+    g.strokeRect(x+4,y+9,7,h-9); g.strokeRect(x+w-11,y+9,7,h-9);
+    dash(g,x+6,y+h-8,x+w-6,y+h-8,C.bark);
+  } else if(word==='bucket'){
+    W(C.ash); g.beginPath();
+    g.moveTo(x+3,y); g.lineTo(x+w-3,y); g.lineTo(x+w-7,y+h); g.lineTo(x+7,y+h); g.closePath();
+    g.fill(); O(); g.stroke();
+    g.fillStyle=INK; g.fillRect(x+2,y+h*0.35,w-4,3); g.fillRect(x+3,y+h*0.65,w-6,3);
+    O(2); g.beginPath(); g.arc(cx,y+2,w/2-4,Math.PI,0); g.stroke();
+  } else if(word==='basket'){
+    W(c); g.beginPath();
+    g.moveTo(x+2,y); g.lineTo(x+w-2,y); g.lineTo(x+w-8,y+h); g.lineTo(x+8,y+h); g.closePath();
+    g.fill(); O(); g.stroke();
+    for(let ry=y+8;ry<y+h-2;ry+=8) dash(g,x+5,ry,x+w-5,ry,C.bark);
+    W(C.bark); g.fillRect(x,y-4,w,7); O(2); g.strokeRect(x,y-4,w,7);
+  } else if(word==='sack'){
+    W(c); g.beginPath();
+    g.moveTo(cx-8,y+12); g.quadraticCurveTo(x,y+h/2,x+6,y+h-2);
+    g.lineTo(x+w-6,y+h-2); g.quadraticCurveTo(x+w,y+h/2,cx+8,y+12); g.closePath();
+    g.fill(); O(); g.stroke();
+    W(C.rust); g.fillRect(cx-9,y+6,18,7); O(2); g.strokeRect(cx-9,y+6,18,7);
+    dash(g,cx-10,y+24,cx+10,y+40,C.parch);
+  } else if(word==='bell'){
+    W(c); g.beginPath();
+    g.moveTo(x+4,y+h); g.quadraticCurveTo(x+4,y+8,cx,y+8); g.quadraticCurveTo(x+w-4,y+8,x+w-4,y+h); g.closePath();
+    g.fill(); O(); g.stroke();
+    O(2); g.beginPath(); g.moveTo(x+4,y+h-8); g.lineTo(x+w-4,y+h-8); g.stroke();
+    W(C.rust); g.beginPath(); g.arc(cx,y+h-3,4,0,7); g.fill();
+    O(2); g.beginPath(); g.arc(cx,y,4,Math.PI,0); g.stroke();
+  } else if(word==='drum'){
+    W(c); g.fillRect(x+3,y+6,w-6,h-6); O(); g.strokeRect(x+3,y+6,w-6,h-6);
+    W(C.cream); g.fillRect(x,y,w,9); O(2); g.strokeRect(x,y,w,9);
+    W(C.bark); g.fillRect(x,y+h-9,w,9); O(2); g.strokeRect(x,y+h-9,w,9);
+    O(1.5); g.beginPath();
+    for(let i=0;i<=4;i++){ const lx=x+4+i*(w-8)/4; g.moveTo(lx,y+9); g.lineTo(x+w-4-(i*(w-8)/4),y+h-9); }
+    g.stroke();
+  } else if(word==='banner'){
+    W(C.bark); g.fillRect(x,y,6,h); O(); g.strokeRect(x,y,6,h);
+    W(C.must); g.beginPath(); g.arc(x+3,y-2,5,0,7); g.fill(); O(2); g.stroke();
+    W(c); g.beginPath();
+    g.moveTo(x+6,y+2); g.lineTo(x+w,y+2); g.lineTo(x+w,y+h-12); g.lineTo(x+w-5,y+h-6);
+    g.lineTo(x+w-10,y+h-12); g.lineTo(x+6,y+h-12); g.closePath(); g.fill(); O(); g.stroke();
+    W(C.must); g.beginPath(); g.arc(x+6+(w-6)/2,y+22,6,0,7); g.fill();
+  } else if(word==='book'){
+    W(c); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
+    W(C.cream); g.fillRect(x+w-7,y+3,5,h-6);
+    dash(g,x+4,y+h/2,x+w-10,y+h/2,C.parch);
+    W(C.must); g.fillRect(x,y+h/2-6,5,12);
+  } else if(word==='candle'){
+    W(C.cream); g.fillRect(cx-4,y+8,8,h-8); O(2); g.strokeRect(cx-4,y+8,8,h-8);
+    W(C.must); g.beginPath(); g.moveTo(cx-5,y+8); g.lineTo(cx,y-6); g.lineTo(cx+5,y+8); g.closePath(); g.fill();
+    W(C.honey); g.beginPath(); g.moveTo(cx-2,y+7); g.lineTo(cx,y); g.lineTo(cx+2,y+7); g.closePath(); g.fill();
+  } else if(word==='staff'){
+    W(C.bark); g.fillRect(cx-3,y,w-6,h); O(); g.strokeRect(cx-3,y,w-6,h);
+    dash(g,cx-3,y+10,cx+3,y+30,C.clay); dash(g,cx-3,y+50,cx+3,y+70,C.clay);
+    W(C.must); g.beginPath(); g.arc(cx,y-2,6,0,7); g.fill(); O(2); g.stroke();
+  } else if(word==='wheel'){
+    W(c); g.beginPath(); g.arc(cx,y+h/2,Math.min(w,h)/2-1,0,7); g.fill(); O(); g.stroke();
+    O(2);
+    for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; g.beginPath(); g.moveTo(cx,y+h/2); g.lineTo(cx+Math.cos(a)*20,y+h/2+Math.sin(a)*20); g.stroke(); }
+    W(C.rust); g.beginPath(); g.arc(cx,y+h/2,5,0,7); g.fill(); O(2); g.stroke();
   } else { // wild fallback parcel + any other noun: crate build with its tint
     W(c); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
     O(2); g.strokeRect(x+5,y+5,w-10,h-10);
