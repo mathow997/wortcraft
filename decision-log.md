@@ -127,3 +127,10 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     Riding a strand: `E` grabs, `W/S` climbs, `A/D` pumps the swing, `Space`
     releases with momentum. Knots vs frayed ends drawn in-world; counts
     against the same 3-live-object cap.
+
+22. **Carryable ropes + tie validation.** Loose ends can be picked up (`E`)
+    and carried overhead with full movement — ground friction makes the
+    strand trail behind — then tied or dropped with `E`. Tie validation
+    refuses impossible spans (too far to reach, or so close the rope would
+    bunch into a stub). Ropes lengthened (~168px) so tied lines read
+    properly. Grabbing the middle of a strand still rides it.

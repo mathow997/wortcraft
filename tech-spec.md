@@ -244,6 +244,12 @@ ties off onto it (snapped to the surface). Riding: `E` grabs a strand, `W/S`
 climbs along it, `A/D` pumps the swing, `Space` lets go with momentum, `E`
 lets go and ties off if holding an end.
 
+Carrying: `E` at a loose end with no tie in reach picks the end up instead —
+it rides above the apprentice's head while walking (full movement kept,
+ground friction trails the strand behind). `E` again ties it off or drops
+it. Tie validation refuses spans the rope can't make: too far apart won't
+reach, too close together would bunch into a stub.
+
 ## 4. Asset Manifest
 
 Organize by category so opencode can generate/import in batches. All should

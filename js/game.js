@@ -108,6 +108,7 @@
   const cam=Engine.makeCamera(960,540);
   let player, solids, summons, ropes, liveOrder, herb, shadow, gateWall, exitArch, thorns, running=false, raf=0, hasMugwort=false, shadowGone=false, won=false, fx=[], ink=3, climbT=0;
   const grabbed={rope:null,idx:0,cd:0}; // rope rider state
+  const carried={rope:null,end:'last'}; // carried loose end (pick up + move before tying)
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
   // v1 implementation: curated base + procedural fallback so unknown words still spawn.
   // behaviors: static | float (rises, carries rider) | heavy (falls, lands) | bouncy (trampoline) | climb (W/S to scale)
@@ -125,9 +126,9 @@
   const GLYPH={static:'',float:'↑',heavy:'▼',bouncy:'~',climb:'≡',rope:'➰'};
   // ropelike words simulate as Verlet strands (see rope system below), not solids
   const ROPE_WORDS={
-    rope:{c:'#c9a44a',segs:9,len:13,g:1,damp:0.985},
-    vine:{c:'#5f8448',segs:9,len:13,g:0.9,damp:0.98},
-    chain:{c:'#9a9a92',segs:7,len:13,g:1.6,damp:0.99} };
+    rope:{c:'#c9a44a',segs:12,len:14,g:1,damp:0.985},
+    vine:{c:'#5f8448',segs:12,len:14,g:0.9,damp:0.98},
+    chain:{c:'#9a9a92',segs:8,len:14,g:1.6,damp:0.99} };
   function specFor(word){
     if(ROPE_WORDS[word]) return {rope:true,word,...ROPE_WORDS[word]};
     if(LEXICON[word]){ const [c,w,h,b]=LEXICON[word]; return {w,h,c,b}; }
@@ -151,7 +152,7 @@
       {x:900,y:284,w:40,h:200,id:'gatewall'}, // blocking wall, removed on dispel
     ];
     summons=[];
-    ropes=[]; liveOrder=[]; grabbed.rope=null; grabbed.cd=0; climbT=0;
+    ropes=[]; liveOrder=[]; grabbed.rope=null; grabbed.cd=0; carried.rope=null; climbT=0;
     herb={x:498,y:292,w:28,h:28,taken:false}; // above 2nd platform — needs precise jump
     shadow={x:872,y:420,w:60,h:64};
     gateWall=true;
@@ -202,7 +203,9 @@
   });
   function evictOldest(){ // max 3 live conjurings across summons + ropes
     const k=liveOrder.shift();
-    if(k==='r') ropes.shift(); else summons.shift();
+    const out=(k==='r')?ropes.shift():summons.shift();
+    if(out && grabbed.rope===out) grabbed.rope=null;
+    if(out && carried.rope===out) carried.rope=null;
   }
   function conjure(word){
     if(ink<=0 || won) return;
@@ -216,7 +219,7 @@
     }
     ink--; updateInk();
     if(spec.wild) flashHint(`"${word}" appears, roughly. The ink doesn't quite know it.`);
-    else if(spec.rope) flashHint(`"${word}" falls — it catches on platforms above, or tie the loose end (E).`);
+    else if(spec.rope) flashHint(`"${word}" falls — pick up a loose end (E) to carry it, E again to tie or drop.`);
     else if(spec.b!=='static') flashHint(`"${word}" conjured — ${{float:'it rises! Ride it ↑',heavy:'heavy! It drops ▼',bouncy:'bouncy! Jump on it ~',climb:'climb it with W/S ≡'}[spec.b]}`);
   }
   let hintTimer=null;
@@ -283,6 +286,12 @@
         const p=r.pts[i];
         if(p.pinned) continue;
         let vx=(p.x-p.px)*r.damp, vy=(p.y-p.py)*r.damp;
+        // ground friction so a dragged rope trails instead of sliding like ice
+        let supported=false;
+        for(const s of bodies){
+          if(p.x>s.x-2 && p.x<s.x+s.w+2 && p.y<=s.y+2 && p.y>=s.y-6){ supported=true; break; }
+        }
+        if(supported) vx*=0.15;
         p.px=p.x; p.py=p.y;
         p.x+=vx; p.y+=vy+g+((riding && i>=grabbed.idx)?g*0.85:0);
         if(riding && i>=grabbed.idx && (keys['ArrowLeft']||keys['KeyA']||keys['ArrowRight']||keys['KeyD'])){
@@ -300,7 +309,14 @@
         }
       }
       collideRopePoints(r,bodies);
-      anchorTop(r,bodies);
+      if(carried.rope!==r) anchorTop(r,bodies); // a carried rope stays in hand
+    }
+    if(carried.rope){
+      if(!ropes.includes(carried.rope)) carried.rope=null;
+      else { // held end rides above the apprentice's head
+        const h=handPos(), p=carried.rope.pts[carried.end==='first'?0:carried.rope.pts.length-1];
+        p.x=h.x; p.y=h.y; p.px=p.x; p.py=p.y;
+      }
     }
     // rider follows the held point
     if(grabbed.rope){
@@ -310,6 +326,7 @@
     }
   }
   function playerCenter(){ return {x:player.x+player.w/2,y:player.y+player.h/2}; }
+  function handPos(){ return {x:player.x+player.w/2,y:player.y-6}; }
   function nearestRopePoint(c,maxD){
     let best=null;
     for(const r of ropes) for(let i=0;i<r.pts.length;i++){
@@ -348,11 +365,21 @@
     }
     return best;
   }
+  function ropeLength(r){ return (r.pts.length-1)*r.segLen; }
   function doTie(e,t){
-    const p=e.rope.pts[e.endIdx];
+    const r=e.rope, p=r.pts[e.endIdx];
     if(t.type==='solid'){
+      // refuse ties that bunch the rope into a stub or can't reach
+      const L=ropeLength(r);
+      for(const q of r.pts){
+        if(q===p || !q.pinned) continue;
+        const d=Math.hypot(p.x-q.x,p.y-q.y);
+        if(d>L){ flashHint("Too far — the rope won't reach."); return; }
+        if(d<L*0.35){ flashHint('Too close — no slack to spare. Tie it further off.'); return; }
+      }
       p.x=t.x; p.y=t.y; p.px=p.x; p.py=p.y; p.pinned=true;
-      flashHint(`"${e.rope.word}" tied fast.`);
+      if(carried.rope===r) carried.rope=null;
+      flashHint(`"${r.word}" tied fast.`);
     } else mergeRopes(e.rope,e.end,t.rope,t.end);
   }
   function mergeRopes(A,aEnd,B,bEnd){
@@ -367,6 +394,7 @@
     liveOrder.splice(liveOrder.indexOf('r'),1);
     if(grabbed.rope===B){ grabbed.rope=A; grabbed.idx=Alen+((bEnd==='first')?grabbed.idx:(Blen-1-grabbed.idx)); }
     else if(grabbed.rope===A && aEnd==='first'){ grabbed.idx=Alen-1-grabbed.idx; }
+    if(carried.rope===A||carried.rope===B) carried.rope=null; // tied end was in hand — let go
     flashHint(`Knotted into one long ${A.word}.`);
   }
   function grabRope(r,idx){ grabbed.rope=r; grabbed.idx=idx; climbT=0; }
@@ -386,16 +414,27 @@
     }
   }
   function ropeInteract(){
+    // loose ends are for carrying/tying; grab the middle of a strand to ride it
     const c=playerCenter();
     const e=nearestLooseEnd(c,64);
     if(e){
       const p=e.rope.pts[e.endIdx];
       const t=findTieTarget(e,p);
       if(t){ doTie(e,t); return; }
-      grabRope(e.rope,e.endIdx); return;
+      carried.rope=e.rope; carried.end=e.end;
+      flashHint(`Carrying the ${e.rope.word} — walk it over, E ties or drops.`);
+      return;
     }
     const n=nearestRopePoint(c,48);
     if(n) grabRope(n.rope,n.idx);
+  }
+  function carryTieOrDrop(){
+    const r=carried.rope; if(!r){ return; }
+    const endIdx=carried.end==='first'?0:r.pts.length-1;
+    const p=r.pts[endIdx];
+    const t=findTieTarget({rope:r,end:carried.end,endIdx},p);
+    if(t) doTie({rope:r,end:carried.end,endIdx},t);
+    else { carried.rope=null; p.px=p.x; p.py=p.y; }
   }
   function updateRopeRider(dt){
     const r=grabbed.rope;
@@ -537,7 +576,10 @@
       keys['KeyE']=false;
       flashHint('Gate open! Head right → through the stone arch.');
     }
-    if(keys['KeyE'] && !showPrompt && grabbed.cd<=0){ ropeInteract(); keys['KeyE']=false; }
+    if(keys['KeyE'] && !showPrompt && grabbed.cd<=0){
+      if(carried.rope) carryTieOrDrop(); else ropeInteract();
+      keys['KeyE']=false;
+    }
     } // end on-foot branch (rope rider handled above)
     fx.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=300*dt;p.life-=dt;});
     fx=fx.filter(p=>p.life>0);
@@ -580,13 +622,16 @@
       const mid=r.pts[Math.floor(r.pts.length/2)];
       ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(r.word+' ➰',mid.x+8,mid.y);
     }
-    // E hint near rope (tie a loose end or grab hold)
-    if(!grabbed.rope && !won){
+    // E hint near rope (carry/tie a loose end, or grab hold to ride)
+    if(!won){
       const c=playerCenter();
       let hx=null,label='';
-      const e=nearestLooseEnd(c,64);
-      if(e){ const p=e.rope.pts[e.endIdx]; hx=p; label=findTieTarget(e,p)?'E: tie':'E: grab'; }
-      else { const n=nearestRopePoint(c,48); if(n){ hx=n.rope.pts[n.idx]; label='E: grab'; } }
+      if(carried.rope){ const h=handPos(); hx=h; label='E: tie / drop'; }
+      else if(!grabbed.rope){
+        const e=nearestLooseEnd(c,64);
+        if(e){ const p=e.rope.pts[e.endIdx]; hx=p; label=findTieTarget(e,p)?'E: tie':'E: carry'; }
+        else { const n=nearestRopePoint(c,48); if(n){ hx=n.rope.pts[n.idx]; label='E: ride'; } }
+      }
       if(hx){ ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia'; ctx.fillText(label,hx.x-20,hx.y-14); }
     }
     // thorns hazard
