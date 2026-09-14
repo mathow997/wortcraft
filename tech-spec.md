@@ -88,6 +88,8 @@ this is what makes "add level 2 later" cheap.
 {
   "id": "level_01",
   "title": "The Nine Herbs",
+  "beat": "level_01",
+  "blurb": "Mugwort · dusty jars, high shelves",
   "unlockedByDefault": true,
   "settings": ["cottage_garden", "meadow", "forest", "stream", "cottage_interior"],
   "puzzles": ["puzzle_01", "puzzle_02", "... puzzle_10"],
@@ -95,6 +97,9 @@ this is what makes "add level 2 later" cheap.
   "outroDialogue": "dialogue_level01_outro"
 }
 ```
+
+`beat` selects the chapter's builder + hooks in the shared engine;
+`blurb` is the one-line map teaser.
 
 ### 3.2 Puzzle/beat schema
 

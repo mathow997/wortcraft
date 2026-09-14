@@ -107,6 +107,91 @@ function tree(g,x,baseY,s){ // round-canopy tree: trunk + 4 canopy blobs
   });
   dash(g,x-20*s,baseY-66*s,x+20*s,baseY-66*s,C.moss);
 }
+function pine(g,x,baseY,s){ // tall pine: trunk + 3 skirt tiers
+  box(g,x-6*s,baseY-50*s,12*s,50*s,C.bark,false);
+  const tiers=[[-34,52],[ -27,40],[-19,30]];
+  tiers.forEach(([hw,hh],i)=>{
+    const ty=baseY-50*s-(2-i)*34*s; // widest tier lowest
+    g.fillStyle=[C.moss,C.leaf,C.sage][i%3];
+    g.beginPath(); g.moveTo(x-hw*s,ty); g.lineTo(x,ty-hh*s); g.lineTo(x+hw*s,ty); g.closePath();
+    g.fill(); g.strokeStyle=INK; g.lineWidth=2.5; g.stroke();
+  });
+  dash(g,x-14*s,baseY-70*s,x+14*s,baseY-70*s,C.moss);
+}
+// themed decor for beats 2-4: 2600x540 world-space canvas (y 0..540)
+function buildBeatDecor(theme,opts){
+  opts=opts||{};
+  const W2=2600;
+  const cv=document.createElement('canvas'); cv.width=W2; cv.height=540;
+  const g=cv.getContext('2d');
+  const rng=mulberry32(theme==='forest'?21:(theme==='tallgrass'?13:5));
+  if(theme==='forest'){
+    g.fillStyle=C.moss; g.fillRect(0,0,W2,484);              // deep green gloom
+    for(let i=0;i<20;i++){ dash(g,rng()*W2,rng()*440,rng()*W2,rng()*440,C.leaf); }
+    pine(g,200,484,1.4); pine(g,1650,484,1.6); pine(g,2200,484,1.2); pine(g,2450,484,1.5); pine(g,950,484,1.1);
+    tree(g,500,484,1.1); tree(g,1950,484,1);
+    for(let i=0;i<12;i++){ // hanging moss
+      const x=100+rng()*2400;
+      g.strokeStyle=C.sage; g.lineWidth=2;
+      g.beginPath(); g.moveTo(x,60+rng()*120); g.lineTo(x,140+rng()*160); g.stroke();
+    }
+    for(let i=0;i<10;i++) shroom(g,150+rng()*2300,470+rng()*10,0.8+rng()*0.8,rng()<0.5?C.terra:C.must);
+    for(let i=0;i<24;i++){ g.fillStyle=C.honey; g.fillRect(rng()*W2,rng()*440,3,3); } // fireflies
+    box(g,0,484,W2,56,C.clay,false);                        // soil
+    // chasm under the ghost path
+    g.fillStyle=C.night; g.fillRect(600,360,800,180);
+    g.strokeStyle=C.moss; g.lineWidth=3;
+    for(let i=0;i<12;i++){ const x=610+i*66; g.beginPath(); g.moveTo(x,484); g.quadraticCurveTo(x+8,520,x-4,548); g.stroke(); }
+    g.fillStyle='rgba(232,220,192,.12)'; g.fillRect(600,430,800,34);
+    return cv;
+  }
+  // meadow + tallgrass: open sky country
+  g.fillStyle=C.cream; g.fillRect(0,0,W2,300);
+  g.fillStyle=C.honey; g.beginPath(); g.arc(2200,80,26,0,7); g.fill();
+  g.strokeStyle=INK; g.lineWidth=3; g.beginPath(); g.arc(2200,80,26,0,7); g.stroke();
+  cloud(g,300,90,1); cloud(g,1200,70,1.2); cloud(g,2000,120,0.9);
+  bird(g,500,120,1); bird(g,1500,90,1.1); bird(g,2300,150,0.9);
+  for(let i=0;i<11;i++){
+    const cx=i*260-40, rx=150+((i*67)%60), top=240+((i*41)%70);
+    g.fillStyle=i%2?C.sage:C.leaf;
+    g.beginPath(); g.ellipse(cx,470,rx,470-top,0,0,7); g.fill();
+    g.strokeStyle=INK; g.lineWidth=3; g.stroke();
+  }
+  box(g,0,484,W2,56,C.clay,false);
+  dash(g,0,500,W2,500,C.bark);
+  g.fillStyle=C.sage; g.fillRect(0,458,W2,26);
+  const tall=theme==='tallgrass';
+  const tufts=tall?90:44;
+  for(let i=0;i<tufts;i++){
+    const x=rng()*W2, y=436+rng()*24, h=tall?14+rng()*16:9;
+    g.strokeStyle=tall?C.herb2:C.moss; g.lineWidth=2;
+    g.beginPath(); g.moveTo(x,y); g.lineTo(x-3,y-h); g.moveTo(x,y); g.lineTo(x+3,y-h-1); g.stroke();
+    const r=rng();
+    if(tall && r<0.3){ g.fillStyle=C.herb1; g.beginPath(); g.arc(x,y-h-3,3,0,7); g.fill(); } // seed heads
+    else if(r<(tall?0.2:0.35)){ g.fillStyle=rng()<0.5?C.must:C.terra; g.beginPath(); g.arc(x+7,y-6,4,0,7); g.fill(); g.strokeStyle=INK; g.lineWidth=1.5; g.stroke(); }
+  }
+  tree(g,350,458,1); tree(g,2250,458,1.1);
+  bush(g,700,446,34,16); bush(g,1750,448,42,18);
+  for(let i=0;i<6;i++){
+    const x=200+rng()*2200, y=466+rng()*10;
+    g.fillStyle=C.ash; g.beginPath(); g.ellipse(x,y,10+rng()*8,6,0,0,7); g.fill();
+    g.strokeStyle=INK; g.lineWidth=2; g.stroke();
+  }
+  if(opts.water){ // stream gap under the bridge
+    const wx=opts.water.x, ww=opts.water.w;
+    g.fillStyle=C.night; g.fillRect(wx,440,ww,100);
+    g.fillStyle=C.water; g.fillRect(wx,492,ww,32);
+    dash(g,wx+10,502,wx+ww-10,502,C.cream); dash(g,wx+20,514,wx+ww-30,514,C.cream);
+    g.fillStyle='rgba(232,220,192,.14)'; g.fillRect(wx,470,ww,22);
+    [wx+8,wx+ww-8].forEach(rx=>{
+      for(let i=0;i<5;i++){
+        g.strokeStyle=C.moss; g.lineWidth=2.5;
+        g.beginPath(); g.moveTo(rx+(i-2)*6,484); g.lineTo(rx+(i-2)*9,440); g.stroke();
+      }
+    });
+  }
+  return cv;
+}
 
 function buildDecor(){
   const cv=document.createElement('canvas'); cv.width=3200; cv.height=900;
@@ -497,5 +582,5 @@ function drawApprentice(g,x,y,w,h,color,hair,facing,carry){
   g.stroke();
 }
 
-return {buildDecor, drawApprentice, drawSummon, LAYOUT};
+return {buildDecor, buildBeatDecor, drawApprentice, drawSummon, LAYOUT};
 })();

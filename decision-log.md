@@ -188,3 +188,12 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     run for now). `X` removes the nearest conjured object/strand (never the
     one being ridden or carried) with a parchment puff and refunds 1 ink,
     so experimenting and retrying is free-ish. On-screen `X: banish` hint.
+
+30. **Beats 2–4 ship as separate chapters.** One shared engine with a BEATS
+    registry (per-chapter layout/ink/herb/dialogues/decor + update/E/draw
+    hooks); pickups generalized (dust optional, free takes), NPCs
+    (blocking goat), patrol swarms, ghost platforms, per-chapter dim light.
+    Chapters: goat bridge + chamomile (ink 15), swarm field + fennel
+    (ink 15), will-o'-wisp glamour + betony (ink 20, reveal-to-solidify).
+    Decor themes meadow/tallgrass/forest; chapters reunite into one journey
+    later. Level schema gains `beat` + `blurb`.
