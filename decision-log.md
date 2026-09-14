@@ -237,3 +237,8 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     spawn as physical pushable objects (`E` takes, double-`E` sets back
     down as an object). New throwable grappling hook (`hook`/`grapple`/
     `grappling`) that anchors into surfaces and drops a swingable rope.
+
+36. **Hook aiming.** Conjured hooks hover at hand; the mouse aims (upper
+    hemisphere) with a dotted trajectory preview + landing ring, click or
+    `Space` looses. Fixed speed, gravity-matched preview, 1.6s flight
+    before it clatters down as an object.

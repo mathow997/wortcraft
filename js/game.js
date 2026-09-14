@@ -579,13 +579,13 @@
     else {
       const ns={x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,vx:0,life:0,resting:false,wild:spec.wild};
       summons.push(ns);
-      if(word==='hook'||word==='grapple'||word==='grappling'){ ns.vx=facing*420; ns.vy=-560; ns.life=1.6; }
+      if(word==='hook'||word==='grapple'||word==='grappling'){ ns.aiming=true; } // held at hand until aimed + loosed
     }
     ink--; updateInk();
     if(TOOL_KIND[word]) flashHint('There it is — pick it up (E), then press U to use it.');
     else if(spec.wild) flashHint(`"${word}" appears, roughly. The ink doesn't quite know it.`);
     else if(spec.rope) flashHint(`"${word}" falls — pick up a loose end (E) to carry it, E again to tie or drop.`);
-    else if(spec.b!=='static') flashHint(`"${word}" conjured — ${{float:'it rises! Ride it ↑',heavy:'heavy! It drops ▼',bouncy:'bouncy! Jump on it ~',climb:'climb it with W/S ≡',hook:'thrown! It catches on walls — then grab the rope'}[spec.b]}`);
+    else if(spec.b!=='static') flashHint(`"${word}" conjured — ${{float:'it rises! Ride it ↑',heavy:'heavy! It drops ▼',bouncy:'bouncy! Jump on it ~',climb:'climb it with W/S ≡',hook:'aim with the mouse — click or Space to loose it'}[spec.b]}`);
   }
   let hintTimer=null;
   function flashHint(msg){
@@ -698,6 +698,34 @@
   }
   function playerCenter(){ return {x:player.x+player.w/2,y:player.y+player.h/2}; }
   function handPos(){ return {x:player.x+player.w/2,y:player.y-6}; }
+  // hook aiming: mouse sets the angle (upper hemisphere), click/Space looses
+  const mouse={x:0,y:0,seen:false};
+  canvas.addEventListener('mousemove', e=>{
+    const r=canvas.getBoundingClientRect();
+    mouse.x=(e.clientX-r.left)*canvas.width/r.width;
+    mouse.y=(e.clientY-r.top)*canvas.height/r.height;
+    mouse.seen=true;
+  });
+  function aimAngle(){
+    const hx=player.x+player.w/2, hy=player.y-30;
+    let a=mouse.seen?Math.atan2((cam.y+mouse.y)-hy,(cam.x+mouse.x)-hx):-Math.PI/3;
+    while(a>0) a-=2*Math.PI;
+    return Math.max(-Math.PI+0.15,Math.min(-0.15,a));
+  }
+  function fireHooks(){
+    const a=aimAngle(), sp=680;
+    let fired=false;
+    for(const s of summons){
+      if(s.b!=='hook'||!s.aiming) continue;
+      s.aiming=false; s.vx=Math.cos(a)*sp; s.vy=Math.sin(a)*sp; s.life=1.6; fired=true;
+    }
+    return fired;
+  }
+  canvas.addEventListener('mousedown', ()=>{
+    if(!screens.level.classList.contains('active')||won||dialogueOpen()) return;
+    if(document.activeElement===summonInput) return;
+    fireHooks();
+  });
   function nearestRopePoint(c,maxD){
     let best=null;
     for(const r of ropes) for(let i=0;i<r.pts.length;i++){
@@ -871,6 +899,9 @@
     stepRopes(dt);
     for(const s of summons){
       if(s.b==='hook' && !s.resting){
+        if(s.aiming){ // held at hand, waiting for aim
+          s.x=player.x+player.w/2-12; s.y=player.y-30; s.vx=s.vy=0;
+        } else {
         // thrown hook: flies, catches the first solid within reach, becomes a rope
         s.vy+=1400*dt;
         const nx=s.x+s.vx*dt, ny=s.y+s.vy*dt;
@@ -883,6 +914,7 @@
         } else {
           s.x=nx; s.y=ny; s.life-=dt;
           if(s.life<=0||s.y>2000){ s.b='static'; s.resting=false; s.vx=s.vy=0; }
+        }
         }
       } else if(s.b==='float' && !s.resting){
         // rise slowly; stop on ceiling contact; carry rider
@@ -943,7 +975,9 @@
     if(player.vx>0) facing=1; else if(player.vx<0) facing=-1;
     if(muds.some(m=>Engine.overlap(player,m))) player.vx*=0.45; // wading through swamp
     const ladderRide=summons.find(s=>s.b==='climb' && Engine.overlap(player,{x:s.x-8,y:s.y-8,w:s.w+16,h:s.h+16}));
-    if(keys['Space']&&(player.onGround||ladderRide)) player.vy=-780; // Space jumps off ladders too
+    const aimingHook=summons.some(s=>s.b==='hook'&&s.aiming);
+    if(aimingHook&&keys['Space']){ fireHooks(); keys['Space']=false; } // loose the hook, don't jump
+    else if(keys['Space']&&(player.onGround||ladderRide)) player.vy=-780;
     else if((keys['ArrowUp']||keys['KeyW'])&&player.onGround) player.vy=-780;
     tryPush(player.vx*dt); // shove grounded summons before resolving player collision
     Engine.moveAndCollide(player,allSolids(),dt);
@@ -1030,6 +1064,22 @@
       if(beat.capAll||s.x<600||s.x>1860){ ctx.fillStyle='#8a9a5b'; ctx.fillRect(s.x,s.y,s.w,5); } // grass cap
     });
     summons.forEach(s=>Art.drawSummon(ctx,s,GLYPH[s.b]||''));
+    const aimHook=summons.find(s=>s.b==='hook'&&s.aiming);
+    if(aimHook && !won){ // dotted trajectory preview + landing ring
+      const a=aimAngle(), sp=680, dt2=1/30;
+      let px=player.x+player.w/2, py=player.y-30, vx=Math.cos(a)*sp, vy=Math.sin(a)*sp;
+      const bodies=solids.filter(q=>!q.ghost||revealed);
+      ctx.fillStyle='#2e3a68';
+      for(let i=0;i<26;i++){
+        vy+=1400*dt2; px+=vx*dt2; py+=vy*dt2;
+        let hit=false;
+        for(const o of bodies){ if(px>o.x&&px<o.x+o.w&&py>o.y&&py<o.y+o.h){ hit=true; break; } }
+        if(i%2===0){ ctx.globalAlpha=0.8; ctx.fillRect(px-2,py-2,4,4); ctx.globalAlpha=1; }
+        if(hit) break;
+      }
+      ctx.strokeStyle='#b3552e'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(px,py,7,0,7); ctx.stroke();
+    }
     // ropes: paper strokes, knots where tied, frayed loose ends
     for(const r of ropes){
       ctx.lineJoin='round'; ctx.lineCap='round';
