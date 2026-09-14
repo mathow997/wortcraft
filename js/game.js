@@ -156,6 +156,8 @@
     const bx=n.x, by=n.y+bob;
     ctx.fillStyle='#f5efdd'; ctx.strokeStyle='#2e3a68'; ctx.lineWidth=2.5;
     const near=playerCenter();
+    ctx.save();
+    if((n.dir||1)<0){ ctx.translate(2*bx+n.w,0); ctx.scale(-1,1); }
     if(n.calmed){ // settled: lying down, drowsy
       ctx.fillRect(bx+4,by+30,52,20); ctx.strokeRect(bx+4,by+30,52,20);
       ctx.fillRect(bx+46,by+22,14,14); ctx.strokeRect(bx+46,by+22,14,14);
@@ -174,6 +176,7 @@
       ctx.strokeStyle='#2e3a68'; ctx.lineWidth=2;
       ctx.beginPath(); g2m(ctx,bx+6,by+20); ctx.stroke(); // tail
     }
+    ctx.restore();
     if(!n.calmed && Math.hypot((bx+32)-near.x,(by+28)-near.y)<150){
       ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia';
       ctx.fillText((tools.includes('music')||(counts.chamomile||0)>0)?'U: soothe':'needs soothing…',bx-6,by-12);
@@ -237,45 +240,69 @@
   },
   level_02:{
     hud:'A/D move+push · Space jump · E take · U use · T conjure · X banish · calm the goat, cross the bridge →',
-    world:{x:0,y:0,w:2600,h:540}, spawn:{x:60,y:380}, ink:50,
+    world:{x:0,y:-180,w:2600,h:720}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'The stream is swift — take the bridge.',
     need:'chamomile', needName:'Chamomile', intro:'dialogue_b2_intro', pickup:'dialogue_b2_pickup', outro:'dialogue_b2_outro',
-    decor:()=>Art.buildBeatDecor('meadow',{water:{x:1100,w:300}}), decorDy:0, arch:true, capAll:true,
+    decor:()=>Art.buildBeatDecor('meadow',{water:{x:1100,w:300}},720,-180), decorDy:180, arch:true, capAll:true,
     hook:{
       update(dt){
-        const g=npcs[0]; if(!g) return;
-        g.bob=(g.bob||0)+dt;
-        if(g.calmed && g.slide<80){ g.x+=60*dt; g.slide+=60*dt; }
+        for(const g of npcs){
+          if(g.kind!=='goat') continue;
+          g.bob=(g.bob||0)+dt;
+          if(g.calmed){ if(g.slide<80){ g.x+=60*dt; g.slide+=60*dt; } continue; }
+          const px=player.x+player.w/2, gx=g.x+g.w/2;
+          const sameLevel=Math.abs((player.y+player.h)-(g.y+g.h))<60;
+          if(g.charging){
+            g.x+=g.dir*240*dt;
+            if(g.x<g.zone[0]){ g.x=g.zone[0]; g.charging=false; }
+            if(g.x+g.w>g.zone[1]){ g.x=g.zone[1]-g.w; g.charging=false; }
+            if(Math.abs(px-gx)>340||!sameLevel) g.charging=false;
+          } else {
+            if(sameLevel&&Math.abs(px-gx)<230){ g.charging=true; g.dir=px>gx?1:-1; }
+            else { g.dir=g.dir||1; g.x+=g.dir*40*dt;
+              if(g.x<g.zone[0]){ g.x=g.zone[0]; g.dir=1; }
+              if(g.x+g.w>g.zone[1]){ g.x=g.zone[1]-g.w; g.dir=-1; } }
+          }
+          if(Engine.overlap(player,{x:g.x-4,y:g.y-4,w:g.w+8,h:g.h+8})){ respawn('The goat barrels you over! Soothe it first (U).'); break; }
+        }
       },
       onE(){
-        const g=npcs.find(n=>n.kind==='goat'&&!n.calmed); if(!g) return false;
         const c=playerCenter();
-        if(Math.hypot((g.x+g.w/2)-c.x,(g.y+g.h/2)-c.y)>130) return false;
+        let bg=null,bd=130;
+        for(const n of npcs){ if(n.kind!=='goat'||n.calmed) continue;
+          const d=Math.hypot((n.x+n.w/2)-c.x,(n.y+n.h/2)-c.y); if(d<bd){ bd=d; bg=n; } }
+        if(!bg) return false;
         flashHint('It stamps and snorts. Press U to use something soothing.');
         return true;
       },
       use(){
         const c=playerCenter();
-        const g=npcs.find(n=>n.kind==='goat'&&!n.calmed&&Math.hypot((n.x+n.w/2)-c.x,(n.y+n.h/2)-c.y)<150);
-        if(!g){ flashHint('Nothing here needs using.'); return; }
-        if(tools.includes('music')){ playMusic(g); sootheGoat(g); }
-        else if((counts.chamomile||0)>0){ counts.chamomile--; burnHerb(g); sootheGoat(g); if(!counts.chamomile) flashHint('Out of chamomile — pick more.'); }
+        let bg=null,bd=150;
+        for(const n of npcs){ if(n.kind!=='goat'||n.calmed) continue;
+          const d=Math.hypot((n.x+n.w/2)-c.x,(n.y+n.h/2)-c.y); if(d<bd){ bd=d; bg=n; } }
+        if(!bg){ flashHint('Nothing here needs using.'); return; }
+        if(tools.includes('music')){ playMusic(bg); sootheGoat(bg); }
+        else if((counts.chamomile||0)>0){ counts.chamomile--; burnHerb(bg); sootheGoat(bg); if(!counts.chamomile) flashHint('Out of chamomile — pick more.'); }
         else flashHint('The goat needs soothing — chamomile, or music (U).');
       },
-      draw(){ const g=npcs[0]; if(g) drawGoat(g); }
+      draw(){ for(const n of npcs) if(n.kind==='goat') drawGoat(n); }
     },
     build(){
       solids=[
         {x:0,y:484,w:1100,h:120,id:'groundA'},
         {x:700,y:380,w:120,h:18},
+        {x:880,y:180,w:120,h:18,id:'highmeadow'},
         {x:1080,y:440,w:340,h:16,id:'bridge'},
         {x:1400,y:484,w:1200,h:120,id:'groundB'},
         {x:1600,y:410,w:100,h:18},{x:1760,y:340,w:100,h:18},{x:1920,y:400,w:100,h:18},
         {x:1980,y:400,w:140,h:18},
       ];
       thorns=[{x:2000,y:468,w:100,h:16}];
-      pickups=[{x:745,y:342,w:30,h:38,label:'chamomile',herbId:'chamomile',dust:0,free:true}];
-      npcs=[{kind:'goat',x:1230,y:384,w:64,h:56,solid:true,calmed:false,slide:0,bob:0}];
+      pickups=[{x:925,y:142,w:30,h:38,label:'chamomile',herbId:'chamomile',dust:0,free:true,yield:3}];
+      npcs=[
+        {kind:'goat',x:1230,y:384,w:64,h:56,solid:true,calmed:false,slide:0,bob:0,dir:-1,charging:false,zone:[1120,1360]},
+        {kind:'goat',x:2050,y:428,w:64,h:56,solid:true,calmed:false,slide:0,bob:0,dir:1,charging:false,zone:[1900,2300]},
+      ];
       swarms=[];
       exitArch={x:2450,y:364,w:70,h:120};
     }
@@ -512,7 +539,7 @@
     buildInventory();
   }
   function sootheGoat(g){
-    g.calmed=true; g.solid=false;
+    g.calmed=true; g.solid=false; g.charging=false;
     for(let i=0;i<16;i++) fx.push({x:g.x+Math.random()*g.w,y:g.y,vx:(Math.random()-.5)*120,vy:-Math.random()*160,life:.8});
     flashHint('The goat sighs and settles.');
   }

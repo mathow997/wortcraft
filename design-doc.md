@@ -83,8 +83,12 @@ its own before being combined with an earlier one.
    a ravine, and hill hops on the way. Teaches movement + conjuring +
    identification. The shadow-dispel moved to a later beat; this one is
    just about finding the herb.
-2. **Meadow** — Chamomile. Calm a startled goat blocking a footbridge
-   (timing/positioning puzzle, no platforming challenge). Easy.
+2. **Meadow** — Chamomile. Two goats patrol set ground — one holds the
+    footbridge, one the path home — and charge anything unsoothed on their
+    level (touch = back to start). Chamomile roots on a high platform
+    (ladder/balloon to reach, 3 picks per plant); soothing burns one per
+    goat, or play a conjured flute for free. Timing/positioning puzzle with
+    real teeth.
 3. **Meadow, further out** — Fennel. Time a crossing through a drifting
    insect swarm over tall grass (obstacle-timing, light platforming).
    Easy-Medium — first beat combining a spell with movement timing.

@@ -209,3 +209,10 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     spent).
     Decor themes meadow/tallgrass/forest; chapters reunite into one journey
     later. Level schema gains `beat` + `blurb`.
+
+32. **Phase 2: the goats get mean.** Unsoothed goats patrol set zones and
+    charge the apprentice on their level — touch restarts the chapter.
+    Second goat guards the exit path. Chamomile grows wild (not jars) on a
+    high platform, 3 picks per plant; soothing burns one per goat, flute
+    plays free. Meadow world taller (720px); paddock, hay bale, pail, and
+    dragonflies added. Goats face travel direction.

@@ -118,15 +118,16 @@ function pine(g,x,baseY,s){ // tall pine: trunk + 3 skirt tiers
   });
   dash(g,x-14*s,baseY-70*s,x+14*s,baseY-70*s,C.moss);
 }
-// themed decor for beats 2-4: 2600x540 world-space canvas (y 0..540)
-function buildBeatDecor(theme,opts){
-  opts=opts||{};
+// themed decor for beats 2-4: 2600xH world-space canvas (y Y0..Y0+H)
+function buildBeatDecor(theme,opts,H,Y0){
+  opts=opts||{}; H=H||540; Y0=Y0||0;
   const W2=2600;
-  const cv=document.createElement('canvas'); cv.width=W2; cv.height=540;
+  const cv=document.createElement('canvas'); cv.width=W2; cv.height=H;
   const g=cv.getContext('2d');
+  g.translate(0,-Y0);
   const rng=mulberry32(theme==='forest'?21:(theme==='tallgrass'?13:5));
   if(theme==='forest'){
-    g.fillStyle=C.moss; g.fillRect(0,0,W2,484);              // deep green gloom
+    g.fillStyle=C.moss; g.fillRect(0,Y0,W2,484-Y0);          // deep green gloom
     for(let i=0;i<20;i++){ dash(g,rng()*W2,rng()*440,rng()*W2,rng()*440,C.leaf); }
     pine(g,200,484,1.4); pine(g,1650,484,1.6); pine(g,2200,484,1.2); pine(g,2450,484,1.5); pine(g,950,484,1.1);
     tree(g,500,484,1.1); tree(g,1950,484,1);
@@ -146,7 +147,7 @@ function buildBeatDecor(theme,opts){
     return cv;
   }
   // meadow + tallgrass: open sky country
-  g.fillStyle=C.cream; g.fillRect(0,0,W2,300);
+  g.fillStyle=C.cream; g.fillRect(0,Y0,W2,300-Y0);
   g.fillStyle=C.honey; g.beginPath(); g.arc(2200,80,26,0,7); g.fill();
   g.strokeStyle=INK; g.lineWidth=3; g.beginPath(); g.arc(2200,80,26,0,7); g.stroke();
   cloud(g,300,90,1); cloud(g,1200,70,1.2); cloud(g,2000,120,0.9);
@@ -188,6 +189,20 @@ function buildBeatDecor(theme,opts){
         g.strokeStyle=C.moss; g.lineWidth=2.5;
         g.beginPath(); g.moveTo(rx+(i-2)*6,484); g.lineTo(rx+(i-2)*9,440); g.stroke();
       }
+    });
+  }
+  // goat paddock east of the bridge: rails, hay bale, milk pail, dragonflies
+  if(theme==='meadow'){
+    for(let x=1450;x<=1620;x+=42){ box(g,x,400,12,64,C.bark,false); }
+    box(g,1440,408,190,8,C.clay,false);
+    g.fillStyle=C.herb1; g.beginPath(); g.arc(1560,448,20,0,7); g.fill();
+    g.strokeStyle=INK; g.lineWidth=2.5; g.stroke();
+    dash(g,1542,448,1578,448,C.bark); dash(g,1544,438,1576,438,C.bark);
+    box(g,1500,458,20,22,C.ash,false);
+    [[1200,420],[1250,398],[1300,424]].forEach(([x,y])=>{
+      g.strokeStyle=INK; g.lineWidth=2;
+      g.beginPath(); g.moveTo(x-8,y-3); g.lineTo(x+8,y-3); g.stroke();
+      g.fillStyle=C.water; g.fillRect(x-1,y-4,2,12);
     });
   }
   return cv;
