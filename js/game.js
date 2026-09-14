@@ -109,19 +109,26 @@
   let player, solids, summons, herb, shadow, gateWall, exitArch, thorns, running=false, raf=0, hasMugwort=false, shadowGone=false, won=false, fx=[], ink=3;
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
   // v1 implementation: curated base + procedural fallback so unknown words still spawn.
-  const LEXICON={ box:[46,46,'#8a6a42'], crate:[52,52,'#8a6a42'], chest:[56,40,'#6a4a26'],
-    plank:[110,16,'#6a4a26'], bridge:[150,16,'#6a4a26'], ladder:[36,110,'#8a6a42'], beam:[130,20,'#8a6a42'],
-    stone:[60,30,'#9a9a92'], rock:[54,40,'#9a9a92'], boulder:[80,60,'#9a9a92'], step:[70,22,'#c9a44a'],
-    stairs:[90,60,'#c9a44a'], table:[80,40,'#8a6a42'], barrel:[44,60,'#7a4a1a'], ball:[36,36,'#b3552e'],
-    rope:[16,100,'#c9a44a'], pole:[16,110,'#6a4a26'], wall:[30,110,'#8a7a4a'], block:[50,50,'#cfc4a8'],
-    anvil:[70,44,'#1f2a4a'], boat:[110,30,'#6a4a26'], door:[40,90,'#6a4a26'], shield:[40,50,'#2e3a68'] };
+  // behaviors: static | float (rises, carries rider) | heavy (falls, lands) | bouncy (trampoline) | climb (W/S to scale)
+  const LEXICON={
+    box:['#8a6a42',46,46,'static'], crate:['#8a6a42',52,52,'static'], chest:['#6a4a26',56,40,'static'],
+    plank:['#6a4a26',110,16,'static'], bridge:['#6a4a26',150,16,'static'], beam:['#8a6a42',130,20,'static'],
+    stone:['#9a9a92',60,30,'static'], rock:['#9a9a92',54,40,'static'], step:['#c9a44a',70,22,'static'],
+    stairs:['#c9a44a',90,60,'static'], table:['#8a6a42',80,40,'static'], door:['#6a4a26',40,90,'static'],
+    wall:['#8a7a4a',30,110,'static'], block:['#cfc4a8',50,50,'static'], boat:['#6a4a26',110,30,'static'],
+    shield:['#2e3a68',40,50,'static'],
+    ladder:['#8a6a42',36,110,'climb'], rope:['#c9a44a',16,100,'climb'], pole:['#6a4a26',16,110,'climb'],
+    balloon:['#b3552e',44,58,'float'], cloud:['#f5efdd',90,36,'float'],
+    anvil:['#1f2a4a',70,44,'heavy'], boulder:['#9a9a92',80,60,'heavy'], barrel:['#7a4a1a',44,60,'heavy'],
+    ball:['#b3552e',36,36,'bouncy'], cushion:['#8a9a5b',56,24,'bouncy'] };
+  const GLYPH={static:'',float:'↑',heavy:'▼',bouncy:'~',climb:'≡'};
   function specFor(word){
-    if(LEXICON[word]) return {w:LEXICON[word][0],h:LEXICON[word][1],c:LEXICON[word][2]};
+    if(LEXICON[word]){ const [c,w,h,b]=LEXICON[word]; return {w,h,c,b}; }
     // fallback: hash word -> sized parcel so *anything* typed appears (Scribblenauts feel, zero-backend)
     let hsh=0; for(const ch of word) hsh=(hsh*31+ch.charCodeAt(0))>>>0;
     const w=34+(hsh%60), hh=24+(hsh%50);
     const palette=['#8a6a42','#9a9a92','#c9a44a','#8a9a5b','#b3552e'];
-    return {w,h:hh,c:palette[hsh%palette.length],wild:true};
+    return {w,h:hh,c:palette[hsh%palette.length],b:'static',wild:true};
   }
   function stopLoop(){ running=false; cancelAnimationFrame(raf); }
 
@@ -187,12 +194,13 @@
   });
   function conjure(word){
     if(ink<=0 || won) return;
-    if(!word){ flashHint('Type a noun, e.g. ladder, bridge, stone, boat.'); return; }
+    if(!word){ flashHint('Type a noun, e.g. ladder, balloon, anvil, ball, plank.'); return; }
     const spec=specFor(word);
     if(summons.length>=3) summons.shift(); // max 3 live
-    summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,wild:spec.wild});
+    summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,resting:spec.b==='static'||spec.b==='climb'||spec.b==='bouncy',wild:spec.wild});
     ink--; updateInk();
     if(spec.wild) flashHint(`"${word}" appears, roughly. The ink doesn't quite know it.`);
+    else if(spec.b!=='static') flashHint(`"${word}" conjured — ${{float:'it rises! Ride it ↑',heavy:'heavy! It drops ▼',bouncy:'bouncy! Jump on it ~',climb:'climb it with W/S ≡'}[spec.b]}`);
   }
   let hintTimer=null;
   function flashHint(msg){
@@ -202,10 +210,46 @@
   }
 
   function allSolids(){ return solids.concat(summons); }
+  function standingOn(p,s){ return p.y+p.h<=s.y+9 && p.y+p.h>=s.y-9 && p.x+p.w>s.x+2 && p.x<s.x+s.w-2; }
+
+  function updateSummons(dt){
+    for(const s of summons){
+      if(s.b==='float' && !s.resting){
+        // rise slowly; stop on ceiling contact; carry rider
+        const riding=standingOn(player,s);
+        const ny=s.y-45*dt;
+        s.y=ny;
+        let blocked=s.y<40;
+        if(!blocked) for(const o of solids.concat(summons.filter(q=>q!==s))){
+          if(Engine.overlap(s,o)){ blocked=true; break; }
+        }
+        if(blocked){ s.y+=45*dt; s.resting=true; }
+        else if(riding){ player.y=s.y-player.h; player.vy=Math.min(0,player.vy); }
+      } else if(s.b==='heavy' && !s.resting){
+        s.vy+=2200*dt;
+        let ny=s.y+s.vy*dt, hit=false;
+        const probe={x:s.x,y:ny,w:s.w,h:s.h};
+        for(const o of solids.concat(summons.filter(q=>q!==s))){
+          if(Engine.overlap(probe,o)){ hit=true; break; }
+        }
+        if(hit){ // land on top of whatever stopped it
+          let top=Infinity;
+          for(const o of solids.concat(summons.filter(q=>q!==s))){
+            if(s.x+s.w>o.x && s.x<o.x+o.w && o.y>=s.y && o.y<top) top=o.y;
+          }
+          s.y=(top===Infinity?s.y:top-s.h); s.vy=0; s.resting=true;
+          for(let i=0;i<8;i++) fx.push({x:s.x+Math.random()*s.w,y:s.y+s.h,vx:(Math.random()-.5)*120,vy:-Math.random()*120,life:.6});
+        } else s.y=ny;
+        if(s.y>2000){ s.resting=true; }
+      }
+    }
+    // balloon-vs-sky cap: resting floats hover where stopped
+  }
 
   function update(dt){
     // freeze movement while dialogue open (fixes Space-jump conflict + stuck feeling)
     if(dialogueOpen()){ render(); return; }
+    updateSummons(dt);
     // movement
     const speed=260;
     player.vx=0;
@@ -213,6 +257,19 @@
     if(keys['ArrowRight']||keys['KeyD']) player.vx=speed;
     if((keys['Space']||keys['ArrowUp']||keys['KeyW'])&&player.onGround) player.vy=-780;
     Engine.moveAndCollide(player,allSolids(),dt);
+    // climb: scale ladder/rope/pole with W/S after physics
+    const ladder=summons.find(s=>s.b==='climb' && Engine.overlap(player,{x:s.x-8,y:s.y-8,w:s.w+16,h:s.h+16}));
+    if(ladder && (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown'])){
+      player.y+=((keys['KeyS']||keys['ArrowDown'])?1:-1)*170*dt;
+      player.vy=0;
+    }
+    // bouncy: landing on ball/cushion trampolines the player
+    if(player.onGround){
+      const tramp=summons.find(s=>s.b==='bouncy' && standingOn(player,s));
+      if(tramp){ player.vy=-680; player.onGround=false;
+        for(let i=0;i<10;i++) fx.push({x:player.x+Math.random()*player.w,y:player.y+player.h,vx:(Math.random()-.5)*160,vy:-Math.random()*160,life:.5});
+      }
+    }
     keys['Space']=false;
     cam.follow(player.x+player.w/2, player.y+player.h/2, WORLD);
 
@@ -258,7 +315,7 @@
     Engine.paperRect(ctx,cam.x,cam.y-40,960,220,'#c9b98f');           // distant sheet
     for(let i=0;i<6;i++) Engine.paperRect(ctx,i*340+40,cam.y+60+((i%2)*20),180,120,'#b7a67e'); // hills
     solids.forEach(s=>Engine.paperRect(ctx,s.x,s.y,s.w,s.h,'#8a7a52')); // platforms/ground
-    summons.forEach(s=>{ Engine.paperRect(ctx,s.x,s.y,s.w,s.h,s.c||LEXICON[s.word][2]); ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(s.word,s.x+6,s.y+16); });
+    summons.forEach(s=>{ Engine.paperRect(ctx,s.x,s.y,s.w,s.h,s.c); ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(s.word+(GLYPH[s.b]?' '+GLYPH[s.b]:''),s.x+6,s.y+16); });
     // thorns hazard
     thorns.forEach(t=>{ Engine.paperRect(ctx,t.x,t.y,t.w,t.h,'#3d7038'); ctx.fillStyle='#e8dcc0'; ctx.font='12px serif'; ctx.fillText('▲▲▲ thorns',t.x+8,t.y+13); });
     // gate wall vs open state
@@ -283,7 +340,7 @@
     ctx.restore();
     // HUD text
     ctx.fillStyle='#2e3a68'; ctx.font='14px Georgia';
-    ctx.fillText('A/D move · Space jump · E use · T type-to-conjure · Beat 1: mugwort → smoke shadow → EXIT arch', 12, 20);
+    ctx.fillText('A/D move · Space jump · E use · T conjure (ladder≡ balloon↑ anvil▼ ball~) · Beat 1: mugwort → smoke → EXIT', 12, 20);
     const nm=(store.char&&store.char.name)||'Apprentice';
     ctx.fillText(nm, 12, 40);
   }

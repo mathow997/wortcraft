@@ -106,4 +106,10 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     plus a procedural fallback so unknown words still spawn a rough parcel.
     Ink-limited (3 per run, max 3 live) so conjuring solves traversal without
     replacing herb lore. Herb effects and the Nine Herbs recipes stay fixed
-    folklore; behaviors (float/heavy/bouncy) deferred to v2.
+    folklore.
+
+19. **Summon behaviors implemented.** Conjured objects now have five
+    behaviors: `static` platforms, `float` (balloon/cloud rise and carry a
+    rider), `heavy` (anvil/boulder/barrel fall and land), `bouncy`
+    (ball/cushion trampoline the player), `climb` (ladder/rope/pole scalable
+    with W/S). Behavior glyphs (↑▼~≡) drawn on summoned objects.
