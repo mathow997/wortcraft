@@ -74,9 +74,14 @@ doesn't feel like the same puzzle re-skinned nine times, and difficulty
 ramps noticeably but not punishingly — each new mechanic gets introduced on
 its own before being combined with an earlier one.
 
-1. **Witch's Cottage garden** — Mugwort. Tutorial beat: basic run/jump,
-   then dispel a small shadow-creature blocking the garden gate with
-   warding smoke. Easy — teaches movement + first spell use.
+1. **Witch's Cottage garden + potting shed** — Mugwort. Tutorial beat:
+   basic run/jump, then find the herb: three dusty jars on an unjumpable
+   high shelf, labels shuffled every run. Wipe jars (E) to read them,
+   conjure a way up (a ladder is the obvious answer, not the only one),
+   take the mugwort, then trek east with it through the door — thorns,
+   a ravine, and hill hops on the way. Teaches movement + conjuring +
+   identification. The shadow-dispel moved to a later beat; this one is
+   just about finding the herb.
 2. **Meadow** — Chamomile. Calm a startled goat blocking a footbridge
    (timing/positioning puzzle, no platforming challenge). Easy.
 3. **Meadow, further out** — Fennel. Time a crossing through a drifting

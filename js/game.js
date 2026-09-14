@@ -103,10 +103,10 @@
 
   // ---- LEVEL: beat 1 vertical slice (harder + summon demo) ----
   const canvas=$('#game'), ctx=canvas.getContext('2d');
-  const WORLD={x:0,y:0,w:1920,h:540};
+  const WORLD={x:0,y:0,w:3200,h:540};
   const keys=Engine.makeInput();
   const cam=Engine.makeCamera(960,540);
-  let player, solids, summons, ropes, liveOrder, herb, shadow, gateWall, exitArch, thorns, running=false, raf=0, hasMugwort=false, shadowGone=false, won=false, fx=[], ink=3, climbT=0;
+  let player, solids, summons, ropes, liveOrder, jars, checkpoint, exitArch, thorns, running=false, raf=0, hasMugwort=false, won=false, fx=[], ink=3, climbT=0;
   const grabbed={rope:null,idx:0,cd:0}; // rope rider state
   const carried={rope:null,end:'last'}; // carried loose end (pick up + move before tying)
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
@@ -143,22 +143,30 @@
   function startLevel(){
     show('level');
     $('#summon-bar').classList.add('hidden');
-    player=Engine.physicsBody(60,420,28,44);
+    checkpoint={x:60,y:380};
+    player=Engine.physicsBody(60,380,28,44);
     solids=[
-      {x:0,y:484,w:1920,h:56,id:'ground'},
-      {x:220,y:404,w:110,h:18},   // harder: narrower, higher gaps
-      {x:470,y:330,w:100,h:18},
-      {x:700,y:400,w:90,h:18},
-      {x:900,y:284,w:40,h:200,id:'gatewall'}, // blocking wall, removed on dispel
+      {x:0,y:484,w:1600,h:120,id:'groundA'},
+      {x:300,y:420,w:110,h:18},    // tutorial hop
+      {x:600,y:400,w:180,h:18},    // over the thorn bed
+      {x:900,y:410,w:90,h:18},     // step toward the shed
+      {x:1000,y:280,w:220,h:18,id:'shelf'}, // HIGH SHELF — needs a ladder (or wings)
+      {x:1300,y:410,w:90,h:18},
+      {x:1640,y:420,w:80,h:18},    // ravine islands
+      {x:1740,y:380,w:80,h:18},
+      {x:1860,y:484,w:1340,h:120,id:'groundB'},
+      {x:2200,y:410,w:100,h:18},   // hill hops home
+      {x:2360,y:340,w:100,h:18},
+      {x:2520,y:400,w:100,h:18},
     ];
     summons=[];
     ropes=[]; liveOrder=[]; grabbed.rope=null; grabbed.cd=0; carried.rope=null; climbT=0;
-    herb={x:498,y:292,w:28,h:28,taken:false}; // above 2nd platform — needs precise jump
-    shadow={x:872,y:420,w:60,h:64};
-    gateWall=true;
-    exitArch={x:1200,y:364,w:70,h:120}; // visible EXIT goal
-    thorns=[{x:760,y:468,w:100,h:16}]; // ground hazard before gate — use platforms or summon over it
-    hasMugwort=false; shadowGone=false; won=false; fx=[]; ink=3; updateInk();
+    // dusty jars on the shelf — labels shuffled every run, wipe (E) to read
+    const labels=['mugwort','thyme','sage'].sort(()=>Math.random()-0.5);
+    jars=labels.map((label,i)=>({x:1032+i*62,y:242,w:30,h:38,label,dust:3}));
+    exitArch={x:3050,y:364,w:70,h:120}; // the door home
+    thorns=[{x:620,y:468,w:120,h:16}]; // conjure a plank or take the high platform
+    hasMugwort=false; won=false; fx=[]; ink=3; updateInk();
     buildInventory();
     playDialogue('dialogue_level01_intro');
     running=true; let last=performance.now();
@@ -177,7 +185,7 @@
       const d=document.createElement('div'); d.className='slot'+(hasMugwort?'':' locked'); d.textContent=h.icon; d.title=h.displayName;
       inv.appendChild(d);
     });
-    $('#spell-indicator').textContent = hasMugwort ? '✨ warding smoke ready (E)' : '';
+    $('#spell-indicator').textContent = hasMugwort ? '🌿 mugwort — take it home east →' : '';
   }
 
   function near(a,b,pad=80){ return Math.abs((a.x+a.w/2)-(b.x+b.w/2))<pad && Math.abs((a.y)-(b.y))<130; }
@@ -446,6 +454,28 @@
   }
 
   function allSolids(){ return solids.concat(summons); }
+  function respawn(msg){
+    player.x=checkpoint.x; player.y=checkpoint.y; player.vx=0; player.vy=0;
+    grabbed.rope=null;
+    flashHint(msg);
+  }
+  function nearJar(){
+    const c=playerCenter();
+    return jars.find(j=>Math.hypot((j.x+j.w/2)-c.x,(j.y+j.h/2)-c.y)<85) || null;
+  }
+  function wipeJar(j){
+    if(j.dust>0){
+      j.dust--;
+      for(let i=0;i<6;i++) fx.push({x:j.x+Math.random()*j.w,y:j.y+Math.random()*j.h,vx:(Math.random()-.5)*90,vy:-Math.random()*90,life:.5});
+      if(j.dust===0) flashHint(`Wiped clean — the label reads "${j.label}".`);
+    } else if(j.label==='mugwort' && !hasMugwort){
+      hasMugwort=true; store.addHerb('mugwort'); buildInventory();
+      jars.splice(jars.indexOf(j),1);
+      playDialogue('dialogue_beat1_pickup');
+    } else if(j.label!=='mugwort'){
+      flashHint(`${j.label[0].toUpperCase()+j.label.slice(1)} — the charm asks for mugwort. Leave it.`);
+    }
+  }
   function standingOn(p,s){ return p.y+p.h<=s.y+9 && p.y+p.h>=s.y-9 && p.x+p.w>s.x+2 && p.x<s.x+s.w-2; }
   // pushing: walk into a grounded summon to shove it (ladder into place, plank over thorns).
   // Floats drift on their own; heavies shove slowly once landed.
@@ -535,7 +565,9 @@
     player.vx=0;
     if(keys['ArrowLeft']||keys['KeyA']) player.vx=-speed;
     if(keys['ArrowRight']||keys['KeyD']) player.vx=speed;
-    if((keys['Space']||keys['ArrowUp']||keys['KeyW'])&&player.onGround) player.vy=-780;
+    const ladderRide=summons.find(s=>s.b==='climb' && Engine.overlap(player,{x:s.x-8,y:s.y-8,w:s.w+16,h:s.h+16}));
+    if(keys['Space']&&(player.onGround||ladderRide)) player.vy=-780; // Space jumps off ladders too
+    else if((keys['ArrowUp']||keys['KeyW'])&&player.onGround) player.vy=-780;
     tryPush(player.vx*dt); // shove grounded summons before resolving player collision
     Engine.moveAndCollide(player,allSolids(),dt);
     // climb: scale ladder/rope/pole with W/S after physics
@@ -554,44 +586,37 @@
     keys['Space']=false;
     cam.follow(player.x+player.w/2, player.y+player.h/2, WORLD);
 
+    // checkpoint past the shed door; hazards send you back here, not to start
+    if(player.x>950 && checkpoint.x<950){ checkpoint={x:950,y:380}; flashHint('Checkpoint — the shed is behind you. East, home.'); }
     // thorns reset (challenge)
     for(const t of thorns){
-      if(Engine.overlap(player,t)){ player.x=60;player.y=380;player.vx=player.vy=0; flashHint('Thorns! Use the platforms or conjure a plank (T).'); break; }
+      if(Engine.overlap(player,t)){ respawn('Thorns! Take the high platform or conjure a plank (T).'); break; }
     }
 
-    // pickup
-    if(!herb.taken && Engine.overlap(player,herb)){
-      herb.taken=true; hasMugwort=true; store.addHerb('mugwort'); buildInventory();
-      playDialogue('dialogue_beat1_pickup');
-    }
-    // combine prompt
-    const showPrompt = hasMugwort && !shadowGone && near(player,shadow);
-    $('#combine-prompt').classList.toggle('hidden',!showPrompt);
-    if(showPrompt) $('#combine-name').textContent='warding smoke';
-    if(showPrompt && keys['KeyE']){
-      shadowGone=true;
-      gateWall=false;
-      solids=solids.filter(s=>s.id!=='gatewall'); // open gate — wall fully gone
-      for(let i=0;i<24;i++) fx.push({x:shadow.x+Math.random()*60,y:shadow.y+Math.random()*64,vx:(Math.random()-.5)*200,vy:-Math.random()*200,life:1});
-      keys['KeyE']=false;
-      flashHint('Gate open! Head right → through the stone arch.');
-    }
-    if(keys['KeyE'] && !showPrompt && grabbed.cd<=0){
-      if(carried.rope) carryTieOrDrop(); else ropeInteract();
+    // dusty jars: E wipes a layer; a clean mugwort jar is taken, wrong jars named
+    // (herb pickup now lives here — no more shadow dispel in beat 1)
+    // jar prompt + E: dusty jars first, then rope carry/grab
+    const jar=nearJar();
+    $('#combine-prompt').classList.toggle('hidden',!jar);
+    if(jar) $('#combine-name').textContent=jar.dust>0?'dust cloth':'jar';
+    if(keys['KeyE'] && grabbed.cd<=0){
+      if(jar) wipeJar(jar);
+      else if(carried.rope) carryTieOrDrop();
+      else ropeInteract();
       keys['KeyE']=false;
     }
     } // end on-foot branch (rope rider handled above)
     fx.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=300*dt;p.life-=dt;});
     fx=fx.filter(p=>p.life>0);
-    // win: touch the visible exit arch (not an invisible x threshold)
-    if(shadowGone && Engine.overlap(player,exitArch) && !won){
-      won=true; stopLoop();
-      playDialogue('dialogue_level01_outro',()=>{buildMap();show('map');});
+    // win: bring the herb home through the door
+    if(Engine.overlap(player,exitArch) && !won){
+      if(!hasMugwort) flashHint('The charm needs the mugwort first — check the shed shelf.');
+      else { won=true; stopLoop(); playDialogue('dialogue_level01_outro',()=>{buildMap();show('map');}); }
     }
-    // fall back
-    if(player.y>700){ player.x=60;player.y=420;player.vx=player.vy=0; }
+    // fall back (the ravine): back to checkpoint
+    if(player.y>700) respawn('Mind the gap! Conjure a bridge (T) or hop the islands.');
     // E consumed per-frame guard
-    if(keys['KeyE'] && !showPrompt) keys['KeyE']=false;
+    if(keys['KeyE']) keys['KeyE']=false;
   }
 
   function render(){
@@ -599,7 +624,7 @@
     ctx.save(); ctx.translate(-cam.x,-cam.y);
     // parallax paper sheets (bg/mid/fg)
     Engine.paperRect(ctx,cam.x,cam.y-40,960,220,'#c9b98f');           // distant sheet
-    for(let i=0;i<6;i++) Engine.paperRect(ctx,i*340+40,cam.y+60+((i%2)*20),180,120,'#b7a67e'); // hills
+    for(let i=0;i<10;i++) Engine.paperRect(ctx,i*340+40,cam.y+60+((i%2)*20),180,120,'#b7a67e'); // hills
     solids.forEach(s=>Engine.paperRect(ctx,s.x,s.y,s.w,s.h,'#8a7a52')); // platforms/ground
     summons.forEach(s=>{ Engine.paperRect(ctx,s.x,s.y,s.w,s.h,s.c); ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(s.word+(GLYPH[s.b]?' '+GLYPH[s.b]:''),s.x+6,s.y+16); });
     // ropes: paper strokes, knots where tied, frayed loose ends
@@ -636,19 +661,22 @@
     }
     // thorns hazard
     thorns.forEach(t=>{ Engine.paperRect(ctx,t.x,t.y,t.w,t.h,'#3d7038'); ctx.fillStyle='#e8dcc0'; ctx.font='12px serif'; ctx.fillText('▲▲▲ thorns',t.x+8,t.y+13); });
-    // gate wall vs open state
-    if(gateWall){ Engine.paperRect(ctx,900,284,40,200,'#6a4a26'); ctx.fillStyle='#e8dcc0'; ctx.font='12px Georgia'; ctx.fillText('✦',906,300); }
     // visible exit arch
     Engine.paperRect(ctx,exitArch.x,exitArch.y,exitArch.w,exitArch.h,'#c9a44a');
     ctx.fillStyle='#2e3a68'; ctx.font='bold 14px Georgia'; ctx.fillText('EXIT →',exitArch.x-6,exitArch.y-10);
     ctx.fillStyle='#2e3a68'; ctx.fillRect(exitArch.x+12,exitArch.y+20,46,80); // dark doorway
     ctx.fillStyle='#e8c96a'; ctx.font='22px serif'; ctx.fillText('➔',exitArch.x+26,exitArch.y+68);
-    if(!herb.taken){ ctx.font='24px serif'; ctx.fillText('🌿',herb.x,herb.y+24); }
-    if(!shadowGone){
-      Engine.paperRect(ctx,shadow.x,shadow.y,shadow.w,shadow.h,'#1f2a4a');
-      ctx.fillStyle='#e8dcc0'; ctx.font='28px serif'; ctx.fillText('👁',shadow.x+14,shadow.y+42);
-      ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText('smoke it (E) after mugwort',shadow.x-40,shadow.y-10);
-    }
+    // dusty jars on the high shelf
+    ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText('potting shed shelf',1000,266);
+    jars.forEach(j=>{
+      Engine.paperRect(ctx,j.x,j.y,j.w,j.h, j.label==='mugwort'&&j.dust===0 ? '#5f8448' : '#8a6a42');
+      if(j.dust>0){ // dust layer
+        ctx.globalAlpha=0.35+0.2*j.dust; ctx.fillStyle='#9a9a92'; ctx.fillRect(j.x-2,j.y-2,j.w+4,j.h+4); ctx.globalAlpha=1;
+      } else {
+        ctx.fillStyle='#2e3a68'; ctx.font='10px Georgia'; ctx.fillText(j.label,j.x-4,j.y-6);
+        if(j.label==='mugwort'){ ctx.font='16px serif'; ctx.fillText('🌿',j.x+7,j.y+24); }
+      }
+    });
     // player w/ clothing tint + hair
     const ch=store.char||{clothingColor:'#b3552e'};
     Engine.paperRect(ctx,player.x,player.y,player.w,player.h,ch.clothingColor);
@@ -658,7 +686,7 @@
     ctx.restore();
     // HUD text
     ctx.fillStyle='#2e3a68'; ctx.font='14px Georgia';
-    ctx.fillText('A/D move+push · Space jump · E use/grab/tie · T conjure (rope➰ ladder≡ balloon↑ anvil▼ ball~) · EXIT →', 12, 20);
+    ctx.fillText('A/D move+push · Space jump · E wipe/use/grab/tie · T conjure · find mugwort, take it home →', 12, 20);
     const nm=(store.char&&store.char.name)||'Apprentice';
     ctx.fillText(nm, 12, 40);
   }

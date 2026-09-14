@@ -128,6 +128,14 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     releases with momentum. Knots vs frayed ends drawn in-world; counts
     against the same 3-live-object cap.
 
+23. **Beat 1 redesigned: find the herb.** Dropped the shadow-dispel (moved
+    to a later beat). Now: 3200px trek, thorn bed, three dusty jars with
+    shuffled labels on an unjumpable high shelf (wipe with `E` to read,
+    wrong jars named and left), intended solution is a conjured ladder
+    pushed into place — balloon/rope work too. Ravine islands, hill hops,
+    checkpoint at the shed, and the exit door only counts with mugwort in
+    hand. Jump-from-ladder added (Space works on ladders).
+
 22. **Carryable ropes + tie validation.** Loose ends can be picked up (`E`)
     and carried overhead with full movement — ground friction makes the
     strand trail behind — then tied or dropped with `E`. Tie validation

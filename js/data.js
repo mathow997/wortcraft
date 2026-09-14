@@ -50,9 +50,9 @@ npcs:[
   {id:"goat_bridge",displayName:"Startled Goat",appearsIn:"puzzle_02",behavior:"blocks_until_calmed",calmedBy:"chamomile"}
 ],
 dialogues:{
-  dialogue_level01_intro:{id:"dialogue_level01_intro",speaker:"witch",lines:["The patient won't last the week without a cure.","You know the charm. Nine herbs. Go.","Start in the garden — mugwort first. It wards off what lurks by the gate."]},
-  dialogue_beat1_pickup:{id:"dialogue_beat1_pickup",speaker:"apprentice",lines:["Mugwort. Mother of herbs.","The shadow by the gate won't like this smoke."]},
-  dialogue_level01_outro:{id:"dialogue_level01_outro",speaker:"witch",lines:["Nine gathered. Pound them to salve, as the charm bids.","Lay it on — and let the wound close."]}
+  dialogue_level01_intro:{id:"dialogue_level01_intro",speaker:"witch",lines:["Mugwort first. The potting shed keeps its jars on the high shelf — higher than any apprentice can jump.","An inch of dust on every jar. Wipe them clean to read the labels.","Need something? Type it (T) — a ladder, perhaps. Mind the ink: three conjurings a trip."]},
+  dialogue_beat1_pickup:{id:"dialogue_beat1_pickup",speaker:"apprentice",lines:["Mugwort. Mother of herbs.","One herb for the charm. Now walk it home — east, through the door."]},
+  dialogue_level01_outro:{id:"dialogue_level01_outro",speaker:"witch",lines:["One herb found, eight to go.","The charm is patient. The patient is not — back out there soon."]}
 },
 names:["Aldith","Wulfric","Godgifu","Leofric","Edith","Cuthbert","Osric","Winifred","Beorn","Mildryth","Cenric","Aelfgyva","Dunstan","Hilda","Eadric","Sigeburg"],
 hairstyles:["hair_01","hair_02","hair_03","hair_04"],
