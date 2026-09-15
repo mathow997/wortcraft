@@ -56,14 +56,22 @@
     });
   }
 
-  // ---- dialogue ----
-  let dlgLines=[], dlgIdx=0, dlgDone=null;
+  // ---- dialogue (center-screen card + headshot, blocks view until read) ----
+  let dlgLines=[], dlgIdx=0, dlgDone=null, dlgSpeaker='witch';
+  function drawDialoguePortrait(){
+    const c=$('#dialogue-portrait'); if(!c) return;
+    const x=c.getContext('2d');
+    const ch=store.char||{clothingColor:'#b3552e',hairstyleId:'hair_01'};
+    const hair=Math.max(0,Math.min(3,(parseInt((ch.hairstyleId||'hair_01').slice(-2),10)||1)-1));
+    Art.drawPortrait(x, dlgSpeaker, {color:ch.clothingColor, hair});
+    $('#dialogue-speaker').textContent = dlgSpeaker==='witch' ? 'The Witch' : ((store.char&&store.char.name)||'Apprentice');
+  }
   function playDialogue(id, done){
     const d=WORT.dialogues[id]; if(!d){done&&done();return;}
-    dlgLines=[...d.lines]; dlgIdx=0; dlgDone=done||null;
+    dlgLines=[...d.lines]; dlgIdx=0; dlgDone=done||null; dlgSpeaker=d.speaker||'witch';
     $('#dialogue').classList.remove('hidden'); showLine();
   }
-  function showLine(){ $('#dialogue-text').textContent=(WORT.dialogues ? '' : '') + dlgLines[dlgIdx]; }
+  function showLine(){ $('#dialogue-text').textContent=dlgLines[dlgIdx]; drawDialoguePortrait(); }
   $('#dialogue').onclick=()=>{ advanceDialogue(); keys['Space']=false; };
   function advanceDialogue(){
     dlgIdx++;

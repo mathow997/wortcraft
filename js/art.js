@@ -791,5 +791,59 @@ function drawApprentice(g,x,y,w,h,color,hair,facing,carry){
   g.stroke();
 }
 
-return {buildDecor, buildBeatDecor, drawApprentice, drawSummon, LAYOUT};
+// Dialogue headshots (64x64): witch + apprentice, same paper/embroidery treatment.
+// Caller clips to a circle via CSS border-radius; draw edge-to-edge here.
+function drawPortrait(g, speaker, opts){
+  opts = opts || {};
+  const S = 64;
+  g.clearRect(0, 0, S, S);
+  g.fillStyle = C.linen; g.fillRect(0, 0, S, S); // parchment card
+  if (speaker === 'witch'){
+    // shoulders / shawl
+    g.fillStyle = C.moss; g.fillRect(6, 46, 52, 18);
+    g.strokeStyle = INK; g.lineWidth = 2.5; g.strokeRect(6, 46, 52, 18);
+    g.fillStyle = C.sage; g.fillRect(6, 46, 52, 5);
+    // head
+    g.fillStyle = C.skin; g.fillRect(20, 18, 24, 24);
+    g.strokeStyle = INK; g.lineWidth = 2.5; g.strokeRect(20, 18, 24, 24);
+    // grey hair + bun
+    g.fillStyle = C.ash; g.fillRect(18, 14, 28, 8);
+    g.strokeStyle = INK; g.lineWidth = 2; g.strokeRect(18, 14, 28, 8);
+    g.beginPath(); g.arc(32, 12, 7, 0, 7); g.fillStyle = C.ash; g.fill();
+    g.strokeStyle = INK; g.lineWidth = 2; g.stroke();
+    // pointed hat, slightly askew
+    g.fillStyle = C.night;
+    g.beginPath(); g.moveTo(16, 16); g.lineTo(32, -4); g.lineTo(48, 16); g.closePath(); g.fill();
+    g.strokeStyle = INK; g.lineWidth = 2.5; g.stroke();
+    g.fillStyle = C.must; g.fillRect(20, 11, 24, 4);
+    // wrinkles + wart + eyes (stern but kind)
+    g.fillStyle = INK;
+    g.fillRect(24, 28, 3, 3); g.fillRect(37, 28, 3, 3);
+    g.fillStyle = C.night; g.fillRect(25, 34, 14, 1.5);
+    g.fillStyle = C.rust; g.beginPath(); g.arc(42, 36, 1.8, 0, 7); g.fill();
+    // stitch dash on shawl
+    dash(g, 10, 56, 54, 56, C.cream);
+  } else {
+    // apprentice: robe shoulders in chosen color, head + creation hair
+    const color = opts.color || C.terra, hair = opts.hair || 0;
+    g.fillStyle = color; g.fillRect(6, 46, 52, 18);
+    g.strokeStyle = INK; g.lineWidth = 2.5; g.strokeRect(6, 46, 52, 18);
+    g.fillStyle = C.skin; g.fillRect(20, 18, 24, 24);
+    g.strokeStyle = INK; g.lineWidth = 2.5; g.strokeRect(20, 18, 24, 24);
+    g.fillStyle = C.bark;
+    if (hair === 0) g.fillRect(18, 14, 28, 7);
+    else if (hair === 1){ g.fillRect(18, 14, 30, 6); g.fillRect(18, 20, 6, 16); }
+    else if (hair === 2){ g.fillRect(18, 12, 28, 12); }
+    else { g.fillRect(19, 14, 26, 6); g.fillRect(29, 2, 6, 13); }
+    g.strokeStyle = INK; g.lineWidth = 2; g.strokeRect(18, 14, 28, 7);
+    g.fillStyle = INK;
+    g.fillRect(24, 28, 3, 4); g.fillRect(37, 28, 3, 4);
+    g.fillStyle = C.rust; g.fillRect(24, 37, 16, 1.5);
+  }
+  // torn-paper edge ticks
+  g.fillStyle = C.parch;
+  g.fillRect(0, 0, 4, 3); g.fillRect(60, 61, 4, 3);
+}
+
+return {buildDecor, buildBeatDecor, drawApprentice, drawSummon, drawPortrait, LAYOUT};
 })();

@@ -24,9 +24,14 @@ button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.35)}
 #summon-bar{background:#f4ebd4;border:2px solid var(--ink);padding:6px 10px}
 #summon-input{font-family:inherit;border:2px solid var(--ink);padding:4px 8px;width:160px;background:#fff}
 .hidden{display:none!important}
-#dialogue{border:3px solid var(--ink);background:#f4ebd4;padding:10px;margin-top:8px;
+#screen-level{position:relative}
+#dialogue{position:absolute;left:12px;right:12px;top:34%;z-index:5;display:flex;align-items:center;gap:14px;border:3px solid var(--ink);background:#f4ebd4;padding:10px 14px;
   box-shadow:4px 4px 0 rgba(0,0,0,.3);cursor:pointer}
-#dialogue .hint{font-size:.8em;opacity:.6}
+#dialogue-portrait{width:64px;height:64px;flex:0 0 64px;border:3px solid var(--ink);border-radius:50%;background:var(--parchment)}
+.dlg-body{flex:1;min-width:0}
+#dialogue-speaker{margin:0 0 2px;font-size:.8em;font-weight:bold;letter-spacing:.12em;text-transform:uppercase;opacity:.65}
+#dialogue-text{margin:0;font-size:1.02em;line-height:1.35}
+#dialogue .hint{font-size:.8em;opacity:.6;white-space:nowrap;align-self:flex-end}
 #pause,#settings{position:fixed;inset:0;background:rgba(20,22,40,.6);display:flex;
   align-items:center;justify-content:center}
 .pause-box{background:var(--parchment);border:3px solid var(--ink);padding:20px;
