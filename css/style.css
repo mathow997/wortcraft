@@ -25,6 +25,8 @@ button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.35)}
 #summon-input{font-family:inherit;border:2px solid var(--ink);padding:4px 8px;width:160px;background:#fff}
 #quick-summon{display:flex;gap:6px}
 #quick-summon .quick{padding:4px 8px;font-size:.85em}
+#summon-suggest{background:#fff8;border:2px dashed var(--ink);padding:6px 10px;margin-top:6px}
+#summon-suggest button{padding:4px 10px;font-size:.85em;margin-left:6px}
 #pause-log{max-height:150px;overflow:auto;margin:8px 0;font-size:.9em;min-width:240px}
 #pause-log .logline{padding:1px 0}
 .hidden{display:none!important}

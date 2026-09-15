@@ -153,6 +153,9 @@
     banner:['#b3552e',26,90,'static'], book:['#1f2a4a',30,22,'static'],
     candle:['#f5efdd',14,30,'static'], staff:['#6a4a26',12,120,'static'],
     wheel:['#8a6a42',50,50,'static'],
+    bird:['#8a9a5b',56,40,'float'], clarinet:['#1f2a4a',40,16,'static'],
+    tree:['#5f8448',70,130,'climb'], house:['#8a6a42',120,90,'static'],
+    mop:['#8a6a42',20,60,'static'], stick:['#6a4a26',44,10,'static'],
     hook:['#9a9a92',24,24,'hook'], grapple:['#9a9a92',24,24,'hook'], grappling:['#9a9a92',24,24,'hook'] };
   const GLYPH={static:'',float:'↑',heavy:'▼',bouncy:'~',climb:'≡',rope:'➰',hook:'⌒'};
   // the charm is old: modern words are refused, not spawned
@@ -524,10 +527,48 @@
 
   // summon input wiring (T / Enter / Esc)
   const summonInput=$('#summon-input');
+  let pendingSuggest=null; // {orig, match} while the did-you-mean row is up
+  // near-miss spell check: Damerau distance 1 (or 2 on long words) suggests,
+  // never forces — the player can always conjure exactly what they typed
+  function damerau(a,b){
+    const m=a.length,n=b.length;
+    if(!m) return n; if(!n) return m;
+    const d=Array.from({length:m+1},(_,i)=>{ const r=Array(n+1).fill(0); r[0]=i; return r; });
+    for(let j=0;j<=n;j++) d[0][j]=j;
+    for(let i=1;i<=m;i++) for(let j=1;j<=n;j++){
+      const cost=a[i-1]===b[j-1]?0:1;
+      d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+cost);
+      if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1]) d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1);
+    }
+    return d[m][n];
+  }
+  function suggestWord(word){
+    if(!word||LEXICON[word]||ROPE_WORDS[word]) return null;
+    let best=null,bd=99;
+    for(const k of Object.keys(LEXICON).concat(Object.keys(ROPE_WORDS))){
+      if(Math.abs(k.length-word.length)>2) continue;
+      const dd=damerau(word,k);
+      if(dd<bd){ bd=dd; best=k; }
+    }
+    if(!best) return null;
+    return (bd<=1||(bd===2&&best.length>=6))?best:null;
+  }
+  function clearSuggest(){ pendingSuggest=null; const box=$('#summon-suggest'); if(box){ box.innerHTML=''; box.classList.add('hidden'); } }
+  function closeSummonBar(){ clearSuggest(); summonInput.value=''; summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
+  function showSuggest(orig,match){
+    pendingSuggest={orig,match};
+    const box=$('#summon-suggest'); box.innerHTML='';
+    const s=document.createElement('span'); s.textContent=`Did you mean "${match}"? `;
+    const yes=document.createElement('button'); yes.type='button'; yes.textContent=`Yes — conjure ${match}`;
+    yes.onclick=()=>{ const m2=pendingSuggest&&pendingSuggest.match; closeSummonBar(); if(m2) conjure(m2); };
+    const no=document.createElement('button'); no.type='button'; no.textContent=`No — use "${orig}"`;
+    no.onclick=()=>{ const o=pendingSuggest&&pendingSuggest.orig; closeSummonBar(); if(o) conjure(o); };
+    box.append(s,yes,no); box.classList.remove('hidden');
+  }
   addEventListener('keydown', e=>{
     if(!screens.level.classList.contains('active')) return;
     if(e.code==='KeyT' && document.activeElement!==summonInput && !won){
-      e.preventDefault(); $('#summon-bar').classList.remove('hidden'); summonInput.value=''; summonInput.focus();
+      e.preventDefault(); clearSuggest(); $('#summon-bar').classList.remove('hidden'); summonInput.value=''; summonInput.focus();
     }
     if(e.code==='Escape' && document.activeElement===summonInput){ summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
   });
@@ -535,13 +576,16 @@
     e.stopPropagation();
     if(e.key==='Enter'){
       const word=summonInput.value.trim().toLowerCase();
+      if(pendingSuggest&&word===pendingSuggest.orig){ const m2=pendingSuggest.match; closeSummonBar(); if(m2) conjure(m2); return; }
+      if(word&&!REJECT.includes(word)){ const match=suggestWord(word); if(match){ showSuggest(word,match); return; } }
       conjure(word);
-      summonInput.value=''; summonInput.blur(); $('#summon-bar').classList.add('hidden');
+      closeSummonBar();
     }
-    if(e.key==='Escape'){ summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
+    if(e.key==='Escape'){ closeSummonBar(); }
   });
+  summonInput.addEventListener('input', ()=>{ if(pendingSuggest&&summonInput.value.trim().toLowerCase()!==pendingSuggest.orig) clearSuggest(); });
   // handheld tools spawn as real objects: see them, shove them, pick them up (E)
-  const TOOL_KIND={cloth:'cloth',rag:'cloth',sponge:'cloth',brush:'cloth',duster:'cloth',flute:'music',pipe:'music',horn:'music',lute:'music',harp:'music',broom:'broom'};
+  const TOOL_KIND={cloth:'cloth',rag:'cloth',sponge:'cloth',brush:'cloth',duster:'cloth',flute:'music',pipe:'music',horn:'music',lute:'music',harp:'music',clarinet:'music',broom:'broom',mop:'broom'};
   function nearTool(){
     const c=playerCenter();
     return summons.find(s=>s.tool && Math.hypot((s.x+s.w/2)-c.x,(s.y+s.h/2)-c.y)<85) || null;

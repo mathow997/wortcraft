@@ -741,6 +741,43 @@ function drawSummon(g,s,glyph){
     g.beginPath(); g.moveTo(cx-3,y+h-8); g.quadraticCurveTo(cx-10,y+h,cx-12,y+h-8); g.stroke();
     g.beginPath(); g.moveTo(cx+3,y+h-8); g.quadraticCurveTo(cx+10,y+h,cx+12,y+h-8); g.stroke();
     W(C.rust); g.beginPath(); g.arc(cx,y+3,4,0,7); g.fill(); O(2); g.stroke();
+  } else if(word==='bird'){
+    W(c); g.beginPath(); g.ellipse(cx,y+h/2,w/2-4,h/2-8,0,0,7); g.fill(); O(); g.stroke();
+    W(C.cream); g.beginPath(); g.ellipse(cx-8,y+h/2-10,8,12,-0.4,0,7); g.fill(); O(2); g.stroke();
+    W(C.must); g.beginPath(); g.moveTo(x+w-6,y+h/2-14); g.lineTo(x+w+2,y+h/2-10); g.lineTo(x+w-6,y+h/2-6); g.closePath(); g.fill();
+    O(2); g.beginPath(); g.moveTo(x+2,y+h/2+4); g.lineTo(x-8,y+h/2+10); g.moveTo(x+2,y+h/2+8); g.lineTo(x-8,y+h/2+16); g.stroke();
+    g.fillStyle=INK; g.fillRect(cx+8,y+h/2-14,3,3);
+  } else if(word==='clarinet'){
+    W(c); g.fillRect(x,y+h/2-4,w-8,8); O(); g.strokeRect(x,y+h/2-4,w-8,8);
+    W(C.bark); g.beginPath();
+    g.moveTo(x+w-8,y+h/2-6); g.lineTo(x+w,y+h/2-8); g.lineTo(x+w,y+h/2+8); g.lineTo(x+w-8,y+h/2+6); g.closePath();
+    g.fill(); O(2); g.stroke();
+    g.fillStyle=C.must;
+    for(let i=0;i<4;i++){ g.fillRect(x+8+i*7,y+h/2-6,3,4); }
+  } else if(word==='tree'){
+    W(C.bark); g.fillRect(cx-8,y+h-46,16,46); O(); g.strokeRect(cx-8,y+h-46,16,46);
+    dash(g,cx-8,y+h-30,cx+8,y+h-30,C.clay); dash(g,cx-8,y+h-14,cx+8,y+h-14,C.clay);
+    W(C.leaf);
+    g.beginPath(); g.arc(cx-16,y+26,18,0,7); g.arc(cx+16,y+26,18,0,7); g.arc(cx,y+14,20,0,7); g.fill(); O(2); g.stroke();
+    W(C.moss); g.beginPath(); g.arc(cx-8,y+20,6,0,7); g.fill();
+  } else if(word==='house'){
+    W(c); g.fillRect(x+6,y+h/2,w-12,h/2); O(); g.strokeRect(x+6,y+h/2,w-12,h/2);
+    W(C.must); g.beginPath();
+    g.moveTo(x-4,y+h/2+4); g.lineTo(cx,y-6); g.lineTo(x+w+4,y+h/2+4); g.closePath(); g.fill(); O(); g.stroke();
+    dash(g,x,y+h/2+12,x+w,y+h/2+12,C.must);
+    W(C.bark); g.fillRect(cx-10,y+h-34,20,34); O(2); g.strokeRect(cx-10,y+h-34,20,34);
+    W(C.honey); g.fillRect(x+14,y+h/2+12,18,14); O(2); g.strokeRect(x+14,y+h/2+12,18,14);
+  } else if(word==='mop'){
+    W(C.bark); g.fillRect(cx-2,y,5,h-24); O(2); g.strokeRect(cx-2,y,5,h-24);
+    W(C.rust); g.fillRect(cx-5,y+h-28,10,5); O(2); g.strokeRect(cx-5,y+h-28,10,5);
+    W(C.cream); g.beginPath();
+    g.moveTo(cx-6,y+h-23); g.lineTo(cx+6,y+h-23); g.lineTo(cx+9,y+h); g.lineTo(cx-9,y+h); g.closePath();
+    g.fill(); O(); g.stroke();
+    dash(g,cx-5,y+h-14,cx+5,y+h-14,C.parch); dash(g,cx-6,y+h-6,cx+6,y+h-6,C.parch);
+  } else if(word==='stick'){
+    W(c); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
+    dash(g,x+4,y+h/2,x+w-4,y+h/2,C.clay);
+    O(2); g.beginPath(); g.arc(x+3,y+h/2,3,Math.PI/2,Math.PI*1.5); g.stroke();
   } else { // wild fallback parcel + any other noun: crate build with its tint
     W(c); g.fillRect(x,y,w,h); O(); g.strokeRect(x,y,w,h);
     O(2); g.strokeRect(x+5,y+5,w-10,h-10);

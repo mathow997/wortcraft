@@ -264,3 +264,16 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     frequent misses can be promoted into the lexicon). HUD quick slots
     re-conjure the last 3 successful words (click or `1/2/3`, same ink
     cost), cleared at the start of each level.
+
+41. **Near-miss spell check.** Unknown summon words within Damerau distance
+    1 (or 2 on long words) of a known word offer "Did you mean X?" with
+    Yes / No-use-mine buttons — suggestion never forces, the typed word
+    always stays available. Rejected modern words bypass it.
+
+42. **First journal-driven lexicon growth.** Playtest journal (34 attempts)
+    promoted six words to full entries with sprites: `bird` (float),
+    `clarinet` (music tool — the goat solution players kept reaching for),
+    `tree` (climb), `house` (static), `mop` (broom tool), `stick`
+    (static). Typos (`flue`, `rop`, `hock`) now route through spell
+    check; `fly`/`owl`/`window`/`building` stay fallback until they earn
+    a second use.
