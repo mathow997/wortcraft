@@ -251,3 +251,8 @@ reference alongside `design-doc.md` and `tech-spec.md`.
 38. **Hosting: GitHub Pages.** Free, updates deploy on every push to
     `main`, no build step (relative paths only, no backend). Verified
     Pages-ready; owner enables it once in repo settings.
+
+39. **Push convention.** Push all major changes to
+    https://github.com/mathow997/wortcraft (`main`) — every push
+    redeploys the live build, so commit + push together rather than
+    leaving finished work local.
