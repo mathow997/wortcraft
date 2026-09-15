@@ -9,7 +9,11 @@
     get char(){ try{return JSON.parse(localStorage.getItem('wort_char'));}catch{return null;} },
     set char(v){ localStorage.setItem('wort_char', JSON.stringify(v)); },
     get herbs(){ try{return JSON.parse(localStorage.getItem('wort_herbs'))||[];}catch{return[];} },
-    addHerb(id){ const h=this.herbs; if(!h.includes(id)){h.push(id); localStorage.setItem('wort_herbs',JSON.stringify(h));} }
+    addHerb(id){ const h=this.herbs; if(!h.includes(id)){h.push(id); localStorage.setItem('wort_herbs',JSON.stringify(h));} },
+    // persistent summon journal: every attempted word + outcome, across runs (cap 300).
+    // entries: {w:word, o:outcome (tool|rope|static|float|heavy|bouncy|climb|hook|fallback|rejected), b:beat, t:timestamp}
+    get journal(){ try{return JSON.parse(localStorage.getItem('wort_journal'))||[];}catch{return[];} },
+    logSummon(entry){ const j=this.journal; j.push(entry); while(j.length>300) j.shift(); try{localStorage.setItem('wort_journal',JSON.stringify(j));}catch{} }
   };
 
   // ---- character creation ----
@@ -101,8 +105,15 @@
     if(act==='quit-map'){ $('#pause').classList.add('hidden'); buildMap(); show('map'); stopLoop(); }
     if(act==='settings') $('#settings').classList.remove('hidden');
     if(act==='settings-close') $('#settings').classList.add('hidden');
+    if(act==='copy-journal'){
+      const payload=JSON.stringify({exportedAt:new Date().toISOString(),entries:store.journal,report:journalReport(store.journal)});
+      const done=ok=>{ const b=document.querySelector('[data-action="copy-journal"]'); if(b) b.textContent=ok?'Copied! Paste it to the developer.':'Copy failed'; };
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(payload).then(()=>done(true),()=>done(false));
+      else { const ta=document.createElement('textarea'); ta.value=payload; document.body.appendChild(ta); ta.select();
+        try{document.execCommand('copy');done(true);}catch{done(false);} ta.remove(); }
+    }
   });
-  $('#btn-pause').onclick=()=>$('#pause').classList.remove('hidden');
+  $('#btn-pause').onclick=()=>{ buildPauseLog(); $('#pause').classList.remove('hidden'); };
 
   // ---- LEVEL: beat 1 vertical slice (harder + summon demo) ----
   const canvas=$('#game'), ctx=canvas.getContext('2d');
@@ -116,6 +127,7 @@
   function have(){ return (counts[beat.need]||0)>0; } // beat herb carried this run
   const grabbed={rope:null,idx:0,cd:0}; // rope rider state
   const carried={rope:null,end:'last'}; // carried loose end (pick up + move before tying)
+  let summonLog=[], lastThree=[]; // this level: attempted-words log + quick-resummon slots (both cleared per level)
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
   // v1 implementation: curated base + procedural fallback so unknown words still spawn.
   // behaviors: static | float (rises, carries rider) | heavy (falls, lands) | bouncy (trampoline) | climb (W/S to scale)
@@ -474,6 +486,7 @@
     solids=[]; thorns=[]; pickups=[]; npcs=[]; swarms=[]; muds=[]; summons=[]; ropes=[];
     grabbed.rope=null; grabbed.cd=0; carried.rope=null; climbT=0;
     counts={}; tools=[]; hasCloth=false; revealed=false; won=false; fx=[]; ink=beat.ink; updateInk();
+    summonLog=[]; lastThree=[]; buildQuick();
     exitArch={...beat.exit};
     beat.build();
     decor=beat.decor();
@@ -578,6 +591,13 @@
     if(document.activeElement===summonInput) return;
     banish();
   });
+  addEventListener('keydown', e=>{ // 1/2/3: re-conjure a quick slot (same ink cost, no retyping)
+    if(!screens.level.classList.contains('active')) return;
+    if(document.activeElement===summonInput) return;
+    const n={'Digit1':0,'Digit2':1,'Digit3':2}[e.code];
+    if(n===undefined || won || dialogueOpen()) return;
+    const w=lastThree[n]; if(w) conjure(w);
+  });
   addEventListener('keydown', e=>{
     if(e.code!=='KeyU' || !screens.level.classList.contains('active')) return;
     if(document.activeElement===summonInput) return;
@@ -605,6 +625,7 @@
     if(!word){ flashHint('Type a noun, e.g. ladder, cloth, rope, balloon.'); return; }
     if(REJECT.includes(word)){
       flashHint(`It's 1178 — what's a ${word}? `+REJECT_QUIPS[Math.floor(Math.random()*REJECT_QUIPS.length)]);
+      logSummon(word,'rejected');
       return;
     }
     const spec=specFor(word);
@@ -616,6 +637,8 @@
       if(word==='hook'||word==='grapple'||word==='grappling'){ ns.aiming=true; } // held at hand until aimed + loosed
     }
     ink--; updateInk();
+    logSummon(word, TOOL_KIND[word]?'tool':(spec.rope?'rope':(spec.wild?'fallback':spec.b)));
+    lastThree=[word,...lastThree.filter(w=>w!==word)].slice(0,3); buildQuick();
     if(TOOL_KIND[word]) flashHint('There it is — pick it up (E), then press U to use it.');
     else if(spec.wild) flashHint(`"${word}" appears, roughly. The ink doesn't quite know it.`);
     else if(spec.rope) flashHint(`"${word}" falls — pick up a loose end (E) to carry it, E again to tie or drop.`);
@@ -626,6 +649,42 @@
     $('#spell-indicator').textContent=msg;
     clearTimeout(hintTimer);
     hintTimer=setTimeout(buildInventory,1800);
+  }
+  // summon record: session log + persistent journal + last-3 quick slots
+  function logSummon(word,outcome){
+    const e={w:word,o:outcome,b:currentBeatId,t:Date.now()};
+    summonLog.push(e); store.logSummon(e);
+  }
+  function buildQuick(){
+    const q=$('#quick-summon'); if(!q) return; q.innerHTML='';
+    lastThree.forEach((w,i)=>{
+      const b=document.createElement('button'); b.type='button'; b.className='quick'; b.textContent=`${i+1} ${w}`;
+      b.onclick=()=>{ if(!won && !dialogueOpen()) conjure(w); };
+      q.appendChild(b);
+    });
+  }
+  // aggregate any entry list into per-word counts for lexicon tuning:
+  // [{word, n, ok, rejected, fallback}] sorted busiest first
+  function journalReport(list){
+    const m={};
+    (list||[]).forEach(e=>{ const k=(m[e.w]=m[e.w]||{word:e.w,n:0,ok:0,rejected:0,fallback:0}); k.n++;
+      if(e.o==='rejected') k.rejected++; else if(e.o==='fallback') k.fallback++; else k.ok++; });
+    return Object.values(m).sort((a,b)=>b.n-a.n);
+  }
+  function buildPauseLog(){
+    const box=$('#pause-log'); if(!box) return; box.innerHTML='';
+    const cp=document.querySelector('[data-action="copy-journal"]');
+    if(cp) cp.textContent='Copy summon journal';
+    const GLYPHO={rejected:'✕',fallback:'?'};
+    const t=document.createElement('p'); t.className='muted';
+    t.textContent=summonLog.length?`This run: ${summonLog.length} summon${summonLog.length>1?'s':''}`:'Nothing summoned yet this run.';
+    box.appendChild(t);
+    summonLog.slice(-12).reverse().forEach(e=>{
+      const d=document.createElement('div'); d.className='logline';
+      d.textContent=`${e.w} ${(GLYPHO[e.o]||'✓')}`;
+      d.title=`${e.w} — ${e.o} (${e.b})`;
+      box.appendChild(d);
+    });
   }
 
   // ---- rope system: Verlet strands that drape, anchor, knot together, and carry the rider ----

@@ -256,3 +256,11 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     https://github.com/mathow997/wortcraft (`main`) — every push
     redeploys the live build, so commit + push together rather than
     leaving finished work local.
+
+40. **Summon record + quick-resummon.** Every attempted word is logged
+    with its outcome (behavior / `fallback` / `rejected`) to a session
+    log (pause menu, this run) and a persistent journal (`wort_journal`,
+    cap 300, pause-menu copy button exports JSON + per-word report so
+    frequent misses can be promoted into the lexicon). HUD quick slots
+    re-conjure the last 3 successful words (click or `1/2/3`, same ink
+    cost), cleared at the start of each level.
