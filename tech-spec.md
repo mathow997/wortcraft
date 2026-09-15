@@ -234,7 +234,8 @@ Simple linear line arrays are enough for v1 — no branching dialogue needed.
 
 Curated words live in data; unknown words fall back to a hashed parcel
 (size/color derived from the word) so *anything* typed still appears.
-`behavior` is one of `static` (platform), `float` (rises, carries rider),
+`behavior` is one of `static` (platform), `float` (pauses ~2s for boarding,
+then rises, carries rider),
 `heavy` (falls under gravity, lands — and shoves slowly), `bouncy`
 (trampolines the player), `climb` (scalable with W/S), `rope` (Verlet
 strand — drapes under gravity, auto-anchors its top to surfaces above,

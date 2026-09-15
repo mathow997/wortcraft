@@ -130,7 +130,7 @@
   let summonLog=[], lastThree=[]; // this level: attempted-words log + quick-resummon slots (both cleared per level)
   // Full free-text summon (user ruling over fixed-recipe docs): any noun conjures something.
   // v1 implementation: curated base + procedural fallback so unknown words still spawn.
-  // behaviors: static | float (rises, carries rider) | heavy (falls, lands) | bouncy (trampoline) | climb (W/S to scale)
+  // behaviors: static | float (pauses for boarding, then rises, carries rider) | heavy (falls, lands) | bouncy (trampoline) | climb (W/S to scale)
   const LEXICON={
     box:['#8a6a42',46,46,'static'], crate:['#8a6a42',52,52,'static'], chest:['#6a4a26',56,40,'static'],
     plank:['#6a4a26',110,16,'static'], bridge:['#6a4a26',150,16,'static'], beam:['#8a6a42',130,20,'static'],
@@ -676,7 +676,7 @@
     if(TOOL_KIND[word]){ summons.push({x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:'static',tool:TOOL_KIND[word],vy:0,resting:false}); }
     else if(spec.rope){ spawnRope(word,spec); }
     else {
-      const ns={x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,vx:0,life:0,resting:false,wild:spec.wild};
+      const ns={x:player.x+player.w+20,y:player.y+player.h-spec.h,w:spec.w,h:spec.h,word,c:spec.c,b:spec.b,vy:0,vx:0,life:0,resting:false,wild:spec.wild,grace:(spec.b==='float'?2.2:0)};
       summons.push(ns);
       if(word==='hook'||word==='grapple'||word==='grappling'){ ns.aiming=true; } // held at hand until aimed + loosed
     }
@@ -686,7 +686,7 @@
     if(TOOL_KIND[word]) flashHint('There it is — pick it up (E), then press U to use it.');
     else if(spec.wild) flashHint(`"${word}" appears, roughly. The ink doesn't quite know it.`);
     else if(spec.rope) flashHint(`"${word}" falls — pick up a loose end (E) to carry it, E again to tie or drop.`);
-    else if(spec.b!=='static') flashHint(`"${word}" conjured — ${{float:'it rises! Ride it ↑',heavy:'heavy! It drops ▼',bouncy:'bouncy! Jump on it ~',climb:'climb it with W/S ≡',hook:'aim with the mouse — click or Space to loose it'}[spec.b]}`);
+     else if(spec.b!=='static') flashHint(`"${word}" conjured — ${{float:'sits a moment, then rises — jump on! ↑',heavy:'heavy! It drops ▼',bouncy:'bouncy! Jump on it ~',climb:'climb it with W/S ≡',hook:'aim with the mouse — click or Space to loose it'}[spec.b]}`);
   }
   let hintTimer=null;
   function flashHint(msg){
@@ -1032,9 +1032,32 @@
     }
   }
 
+  function settleSolid(s,dt){ // gravity for solids and boarding floats: supported rests, pushed-off falls
+    const bodies=solids.concat(summons.filter(q=>q!==s));
+    const under={x:s.x+2,y:s.y+s.h,w:Math.max(1,s.w-4),h:3};
+    let supported=false;
+    for(const o of bodies){ if(Engine.overlap(under,o)){ supported=true; break; } }
+    if(supported){ s.vy=0; s.resting=true; return; }
+    s.resting=false;
+    s.vy+=2200*dt;
+    const fall={x:s.x,y:s.y+s.vy*dt,w:s.w,h:s.h};
+    let hit=false;
+    for(const o of bodies){ if(Engine.overlap(fall,o)){ hit=true; break; } }
+    if(hit){ // land on top of whatever stopped it
+      let top=Infinity;
+      for(const o of bodies){
+        if(s.x+s.w>o.x && s.x<o.x+o.w && o.y>=s.y && o.y<top) top=o.y;
+      }
+      s.y=(top===Infinity?s.y:top-s.h); s.vy=0; s.resting=true;
+      const n=(s.b==='heavy')?8:4;
+      for(let i=0;i<n;i++) fx.push({x:s.x+Math.random()*s.w,y:s.y+s.h,vx:(Math.random()-.5)*120,vy:-Math.random()*120,life:.6});
+    } else s.y=fall.y;
+    if(s.y>2000){ s.vy=0; s.resting=true; }
+  }
   function updateSummons(dt){
     stepRopes(dt);
     for(const s of summons){
+      if(s.grace>0){ s.grace-=dt; if(s.grace<=0&&s.b==='float') s.resting=false; } // boarding pause over: liftoff even if settled
       if(s.b==='hook' && !s.resting){
         if(s.aiming){ // held at hand, waiting for aim
           s.x=player.x+player.w/2-12; s.y=player.y-30; s.vx=s.vy=0;
@@ -1054,6 +1077,12 @@
         }
         }
       } else if(s.b==='float' && !s.resting){
+        if((s.grace||0)>0){
+          // boarding pause: sits under gravity so you can jump on; shivers before liftoff
+          if(s.grace<=0.7) s.x+=Math.sin(performance.now()/70)*0.8;
+          settleSolid(s,dt);
+          if(standingOn(player,s)){ player.y=s.y-player.h; player.vy=Math.min(0,player.vy); }
+        } else {
         // rise slowly; stop on ceiling contact; carry rider
         const riding=standingOn(player,s);
         const ny=s.y-45*dt;
@@ -1064,28 +1093,9 @@
         }
         if(blocked){ s.y+=45*dt; s.resting=true; }
         else if(riding){ player.y=s.y-player.h; player.vy=Math.min(0,player.vy); }
+        }
       } else if(s.b!=='float'){
-        // everything solid obeys gravity: supported rests, pushed-off falls
-        const bodies=solids.concat(summons.filter(q=>q!==s));
-        const under={x:s.x+2,y:s.y+s.h,w:Math.max(1,s.w-4),h:3};
-        let supported=false;
-        for(const o of bodies){ if(Engine.overlap(under,o)){ supported=true; break; } }
-        if(supported){ s.vy=0; s.resting=true; continue; }
-        s.resting=false;
-        s.vy+=2200*dt;
-        const fall={x:s.x,y:s.y+s.vy*dt,w:s.w,h:s.h};
-        let hit=false;
-        for(const o of bodies){ if(Engine.overlap(fall,o)){ hit=true; break; } }
-        if(hit){ // land on top of whatever stopped it
-          let top=Infinity;
-          for(const o of bodies){
-            if(s.x+s.w>o.x && s.x<o.x+o.w && o.y>=s.y && o.y<top) top=o.y;
-          }
-          s.y=(top===Infinity?s.y:top-s.h); s.vy=0; s.resting=true;
-          const n=(s.b==='heavy')?8:4;
-          for(let i=0;i<n;i++) fx.push({x:s.x+Math.random()*s.w,y:s.y+s.h,vx:(Math.random()-.5)*120,vy:-Math.random()*120,life:.6});
-        } else s.y=fall.y;
-        if(s.y>2000){ s.vy=0; s.resting=true; }
+        settleSolid(s,dt);
       }
     }
   }

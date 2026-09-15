@@ -277,3 +277,8 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     (static). Typos (`flue`, `rop`, `hock`) now route through spell
     check; `fly`/`owl`/`window`/`building` stay fallback until they earn
     a second use.
+
+43. **Floats pause for boarding.** Conjured `float`s (balloon, cloud, bird)
+    sit under gravity for ~2.2s so the apprentice can jump on, shiver for
+    the last 0.7s as a liftoff tell, then rise — even if they settled.
+    Shared gravity extracted to `settleSolid` rather than duplicated.
