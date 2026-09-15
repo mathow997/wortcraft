@@ -231,6 +231,16 @@
     world:{x:0,y:-360,w:3200,h:900}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'Mind the gap! Conjure a bridge (T) or hop the islands.',
     need:'mugwort', needName:'Mugwort', intro:'dialogue_level01_intro', pickup:'dialogue_beat1_pickup', outro:'dialogue_level01_outro',
+    hint(){
+      const hasClothTool=tools.some(t=>t.kind==='cloth');
+      if(!hasCloth && !hasClothTool && !summons.some(s=>s.tool==='cloth'))
+        return 'Try: cloth (T) — then take it (E)';
+      if(pickups.some(p=>p.dust>0))
+        return (hasCloth||hasClothTool) ? 'Wipe a dusty jar (E) to read its label' : 'Try: cloth (T) — then take it (E)';
+      if(!summons.some(s=>s.b==='climb'||s.b==='float') && !ropes.length)
+        return 'Try: ladder (T) — shove it under a shelf';
+      return '';
+    },
     decor:()=>Art.buildDecor(), decorDy:360, arch:false, capAll:false,
     hook:{ update(){ if(player.x>950 && checkpoint.x<950){ checkpoint={x:950,y:380}; flashHint('Checkpoint — the shed is behind you. East, home.'); } } },
     build(){
@@ -261,6 +271,13 @@
     world:{x:0,y:-180,w:2600,h:720}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'The stream is swift — take the bridge.',
     need:'chamomile', needName:'Chamomile', intro:'dialogue_b2_intro', pickup:'dialogue_b2_pickup', outro:'dialogue_b2_outro',
+    hint(){
+      if(!(counts.chamomile>0) && !tools.some(t=>t.kind==='music'))
+        return 'Try: ladder or balloon (T) — the herb roots high';
+      if(npcs.some(n=>n.kind==='goat'&&!n.calmed))
+        return 'U: play music, or burn chamomile to soothe the goat';
+      return '';
+    },
     decor:()=>Art.buildBeatDecor('meadow',{water:{x:1100,w:300}},720,-180), decorDy:180, lockY:0, arch:true, capAll:true,
     hook:{
       update(dt){
@@ -330,6 +347,11 @@
     world:{x:0,y:-180,w:2600,h:720}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'Watch your step in the tall grass.',
     need:'fennel', needName:'Fennel', intro:'dialogue_b3_intro', pickup:'dialogue_b3_pickup', outro:'dialogue_b3_outro',
+    hint(){
+      if(!(counts.fennel>0)) return 'Try: ladder or balloon (T) — fennel grows high';
+      if(swarms.some(s=>!s.dead)) return 'U: wave a broom, or burn fennel to scatter';
+      return '';
+    },
     decor:()=>Art.buildBeatDecor('tallgrass',{},720,-180), decorDy:180, lockY:0, arch:true, capAll:true,
     hook:{
       update(dt){
@@ -393,6 +415,10 @@
     world:{x:0,y:-180,w:2600,h:720}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'The dark below is patient. Back you go.',
     need:'betony', needName:'Betony', intro:'dialogue_b4_intro', pickup:'dialogue_b4_pickup', outro:'dialogue_b4_outro',
+    hint(){
+      if(revealed) return '';
+      return (counts.betony>0) ? 'Burn betony (U) to show the true path' : 'Pick betony (E) — then burn it (U)';
+    },
     decor:()=>Art.buildBeatDecor('forest',{},720,-180), decorDy:180, lockY:0, arch:true, capAll:true, dim:true,
     hook:{
       update(){
@@ -1195,6 +1221,8 @@
     ctx.fillText(beat.hud, 12, 20);
     const nm=(store.char&&store.char.name)||'Apprentice';
     ctx.fillText(nm, 12, 40);
+    const hh=beat.hint && beat.hint(); // contextual summon suggestion
+    if(hh){ ctx.fillStyle='#b3552e'; ctx.font='bold 14px Georgia'; ctx.fillText('✦ '+hh, 12, 58); }
   }
 
   buildMap();
