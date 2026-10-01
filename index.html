@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wortcraft — A medieval puzzle-platformer</title>
-<link rel="stylesheet" href="css/style.css?v=15">
+<link rel="stylesheet" href="css/style.css?v=16">
 <script>
 // visible error overlay: game bugs report themselves instead of blank-screening
 window.addEventListener('error', e=>{
@@ -66,7 +66,7 @@ window.addEventListener('error', e=>{
       <button id="btn-pause">II</button>
     </div>
     <div id="trial-banner" class="hidden" title="Click to expand"><span class="tb-short"></span><span class="tb-full"></span></div>
-    <div id="hint-chip" class="hidden"></div>
+    <div id="hint-chip" class="hidden" title="Click for a hint"><span class="hb-short">✦ Hint</span><span class="hb-full"></span></div>
     <div id="summon-suggest" class="hidden"></div>
     <div id="dialogue" class="hidden"><canvas id="dialogue-portrait" width="64" height="64"></canvas><div class="dlg-body"><p id="dialogue-speaker"></p><p id="dialogue-text"></p></div><span class="hint">click / Space ▸</span></div>
     <div id="overlay-beat4" class="hidden"></div>
@@ -89,6 +89,7 @@ window.addEventListener('error', e=>{
       <button data-action="fieldbook" data-from="pause">Field Book</button>
       <button data-action="copy-journal">Copy summon journal</button>
       <div id="pause-log"></div>
+      <button data-action="replay-trials">Replay trials</button>
       <button data-action="restart">Restart Level</button>
       <button data-action="settings">Settings</button>
       <button data-action="quit-map">Quit to World Map</button>
@@ -106,9 +107,9 @@ window.addEventListener('error', e=>{
     </div>
   </div>
 </div>
-<script src="js/data.js?v=15"></script>
-<script src="js/engine.js?v=15"></script>
-<script src="js/art.js?v=15"></script>
-<script src="js/game.js?v=15"></script>
+<script src="js/data.js?v=16"></script>
+<script src="js/engine.js?v=16"></script>
+<script src="js/art.js?v=16"></script>
+<script src="js/game.js?v=16"></script>
 </body>
 </html>

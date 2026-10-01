@@ -102,6 +102,7 @@
     if(act==='to-title') show('title');
     if(act==='resume') $('#pause').classList.add('hidden');
     if(act==='restart') { $('#pause').classList.add('hidden'); startLevel(currentBeatId); }
+    if(act==='replay-trials') { try{localStorage.removeItem('wort_trials');}catch{} trialsDone=false; $('#pause').classList.add('hidden'); startLevel('level_01'); }
     if(act==='quit-map'){ $('#pause').classList.add('hidden'); buildMap(); show('map'); stopLoop(); }
     if(act==='settings') { syncGuideButtons(); $('#settings').classList.remove('hidden'); }
     if(act==='settings-close') $('#settings').classList.add('hidden');
@@ -116,6 +117,7 @@
   });
   $('#btn-pause').onclick=()=>{ buildPauseLog(); syncGuideButtons(); $('#pause').classList.remove('hidden'); };
   $('#trial-banner').onclick=()=>{ $('#trial-banner').classList.toggle('open'); };
+  $('#hint-chip').onclick=()=>{ $('#hint-chip').classList.toggle('open'); };
   document.addEventListener('change', e=>{
     if(e.target && e.target.id==='set-guide') setTutorial(e.target.checked);
   });
@@ -530,7 +532,7 @@
     world={...beat.world};
     summonInput.value=''; clearSuggest(); // summon bar is permanent — always visible, never hidden
     lastTbKey='\0'; const tb0=$('#trial-banner'); if(tb0){ tb0.classList.add('hidden'); tb0.classList.remove('open','stalled'); }
-    lastHhKey='\0'; const hc0=$('#hint-chip'); if(hc0) hc0.classList.add('hidden');
+    lastHhKey='\0'; lastConjureAt=performance.now(); const hc0=$('#hint-chip'); if(hc0){ hc0.classList.add('hidden'); hc0.classList.remove('open','stalled'); }
     checkpoint={...beat.spawn};
     player=Engine.physicsBody(beat.spawn.x,beat.spawn.y,28,44);
     solids=[]; thorns=[]; pickups=[]; npcs=[]; swarms=[]; muds=[]; summons=[]; ropes=[];
@@ -543,8 +545,8 @@
     decor=beat.decor();
     buildInventory();
     if(currentBeatId==='level_01' && !trialsDone){
-      trialStage=0; trialHintT=0; trialHintLevel=0;
-      playDialogue('dialogue_trial1', ()=>{ trialStage=1; trialHintT=0; trialHintLevel=0; });
+      trialStage=1; trialHintT=0; trialHintLevel=0; // chip shows from the first line
+      playDialogue('dialogue_trial1', ()=>{ trialHintT=0; trialHintLevel=0; });
     }
     else playDialogue(beat.intro);
     running=true; let last=performance.now();
@@ -738,6 +740,7 @@
       if(word==='hook'||word==='grapple'||word==='grappling'){ ns.aiming=true; } // held at hand until aimed + loosed
     }
     ink--; updateInk();
+    lastConjureAt=performance.now();
     trialCheck(word, spec);
     logSummon(word, TOOL_KIND[word]?'tool':(spec.rope?'rope':(spec.wild?'fallback':spec.b)));
     lastThree=[word,...lastThree.filter(w=>w!==word)].slice(0,3); buildQuick();
@@ -800,6 +803,7 @@
   let trialStage=0, trialHintT=0, trialHintLevel=0; // 0 = not waiting, 1/2/3 = awaiting that calling
   function trialCheck(word, spec){
     if(currentBeatId!=='level_01'||trialsDone||trialStage<=0) return;
+    if(dialogueOpen()) return; // prompt still reading — wait for it to close
     if(trialStage===1){
       if(TRIAL_ANIMALS.includes(word)){
         trialStage=0;
@@ -822,12 +826,18 @@
   }
   // hint chip: same parchment tag as the trial chip (rust text), fed by
   // beat.hint(). Canvas text can't restyle per-state, so this lives in the DOM.
-  let lastHhKey='\0';
+  let lastHhKey='\0', lastConjureAt=0;
   function syncHintChip(){
     const el=$('#hint-chip'); if(!el) return;
     const inTrial=currentBeatId==='level_01' && !trialsDone && trialStage>0;
     const txt=(!inTrial && beat && beat.hint) ? (beat.hint()||'') : '';
-    if(txt!==lastHhKey){ lastHhKey=txt; el.classList.toggle('hidden',!txt); el.textContent=txt?('✦ '+txt):''; }
+    if(txt!==lastHhKey){
+      lastHhKey=txt;
+      el.classList.toggle('hidden',!txt);
+      if(txt) el.querySelector('.hb-full').textContent=`✦ maybe ${txt} — or try to summon something else`;
+    }
+    // stuck = a hint showing and nothing successfully spoken for 20s
+    el.classList.toggle('stalled', !!txt && (performance.now()-lastConjureAt>20000));
   }
   // trial chip: collapsed tag top-right (hover/click expands), pulses past 30s
   // stalled. Canvas can't hover, so this lives in the DOM, not the canvas text.

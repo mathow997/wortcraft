@@ -364,6 +364,15 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     stalled on one calling. Canvas hint line yields to the chip while
     trials run.
 
+56. **Trials from line one + coy hint chip.** The trial chip now shows
+    from the first prompt line (validation still waits for the dialogue
+    to close), and a pause-menu "Replay trials" button clears the flag
+    and restarts level 1 — the three stages are always retrievable. The
+    hint chip collapsed to `✦ Hint`; hover/click reveals the answer
+    hedged both ends ("maybe … — or try to summon something else") and
+    it pulses past 20s with nothing successfully spoken (stuck =
+    no-conjure timer, reset every level and every conjuring).
+
 55. **Hint chip + where-you-stand hints.** The orange canvas hint line
     is now a parchment `#hint-chip` tag top-right, same dress as the
     trial chip but rust text. Level 1 hints read position, not just
