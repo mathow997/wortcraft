@@ -164,6 +164,16 @@
     bird:['#8a9a5b',56,40,'float'], clarinet:['#1f2a4a',40,16,'static'],
     tree:['#5f8448',70,130,'climb'], house:['#8a6a42',120,90,'static'],
     mop:['#8a6a42',20,60,'static'], stick:['#6a4a26',44,10,'static'],
+    cat:['#6a4a26',52,30,'static'], dog:['#8a6a42',58,36,'static'],
+    frog:['#5f8448',32,24,'bouncy'], rabbit:['#cfc4a8',36,30,'bouncy'],
+    fish:['#3f7d9c',40,22,'static'], mouse:['#9a9a92',28,18,'static'],
+    kite:['#b3552e',44,50,'float'], carpet:['#7a2e3a',90,16,'float'],
+    doll:['#d9b48f',22,40,'static'], top:['#d9a441',26,30,'bouncy'],
+    fire:['#d9a441',30,40,'static'],
+    whistle:['#c9a44a',26,10,'static'], rake:['#6a4a26',20,64,'static'],
+    pot:['#1f2a4a',36,30,'static'], cup:['#8a9a5b',22,24,'static'],
+    bowl:['#b3552e',36,20,'static'], pillow:['#f5efdd',48,22,'bouncy'],
+    key:['#d9a441',26,14,'static'], ramp:['#8a6a42',110,30,'static'],
     hook:['#9a9a92',24,24,'hook'], grapple:['#9a9a92',24,24,'hook'], grappling:['#9a9a92',24,24,'hook'] };
   const GLYPH={static:'',float:'↑',heavy:'▼',bouncy:'~',climb:'≡',rope:'➰',hook:'⌒'};
   // the charm is old: modern words are refused, not spawned
@@ -617,7 +627,7 @@
   });
   summonInput.addEventListener('input', ()=>{ if(pendingSuggest&&summonInput.value.trim().toLowerCase()!==pendingSuggest.orig) clearSuggest(); });
   // handheld tools spawn as real objects: see them, shove them, pick them up (E)
-  const TOOL_KIND={cloth:'cloth',rag:'cloth',sponge:'cloth',brush:'cloth',duster:'cloth',flute:'music',pipe:'music',horn:'music',lute:'music',harp:'music',clarinet:'music',broom:'broom',mop:'broom'};
+  const TOOL_KIND={cloth:'cloth',rag:'cloth',sponge:'cloth',brush:'cloth',duster:'cloth',flute:'music',pipe:'music',horn:'music',lute:'music',harp:'music',clarinet:'music',whistle:'music',broom:'broom',mop:'broom',rake:'broom'};
   function nearTool(){
     const c=playerCenter();
     return summons.find(s=>s.tool && Math.hypot((s.x+s.w/2)-c.x,(s.y+s.h/2)-c.y)<85) || null;

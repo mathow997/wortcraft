@@ -323,3 +323,14 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     where it read as a stray artifact. Now it only appears over actual
     things (loose cloth, dusty jar, exit door); text-only steps show no
     marker.
+
+49. **Vocab batch: animals, toys, tools, household (+19).** Trial 1
+    ("call a living thing") needed more than `bird`: `cat/dog/mouse`
+    (static), `frog/rabbit` (bouncy), `fish` (static). Toys/fun:
+    `kite/carpet` (float — the carpet is frankly magic), `doll`,
+    `top` (bouncy), `fire` (static hearth glow). New tools:
+    `whistle` (music), `rake` (broom — fennel-thematic). Household:
+    `pot/cup/bowl`, `pillow` (bouncy), `key`, `ramp` (static). All with
+    sprites; quick icons, hand-held minis, and `E/U` behavior inherited
+    automatically. Witch-trial hints will escalate vague→specific so the
+    any-thing realization lands first.
