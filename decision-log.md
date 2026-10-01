@@ -317,3 +317,9 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     with a 🎒 satchel slot and leather-stitched bag styling; the newest
     held tool (or the carried herb) also draws in the apprentice's free
     hand (`Art.drawApprentice` held param: cloth/music/broom/herb minis).
+
+48. **Guide marker only on real targets.** The pulsing ▼ ring also drew
+    on move/jump/conjure steps at an empty point beside the player,
+    where it read as a stray artifact. Now it only appears over actual
+    things (loose cloth, dusty jar, exit door); text-only steps show no
+    marker.

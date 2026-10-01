@@ -775,12 +775,12 @@
     const clothOut=summons.some(s=>s.tool==='cloth');
     const dusty=pickups.find(p=>p.dust>0);
     const upWay=summons.some(s=>s.b==='climb'||s.b==='float')||ropes.length>0;
-    if(!tutMoved) return {idx:0,total:7,nudge:'Walk with A / D',detail:'Hold D to walk right toward the shed',answer:'Hold D (or →) now',tx:player.x+60,ty:player.y-30};
-    if(!tutJumped) return {idx:1,total:7,nudge:'Jump with Space',detail:'Press Space to hop onto the low grass ledges',answer:'Press Space while holding D',tx:player.x+60,ty:player.y-30};
-    if(!hasCloth && !clothOut) return {idx:2,total:7,nudge:'Conjure a cloth',detail:'Press T, type cloth, press Enter',answer:'T → cloth → Enter (costs 1 ink)',tx:player.x+80,ty:player.y-40};
+    if(!tutMoved) return {idx:0,total:7,nudge:'Walk with A / D',detail:'Hold D to walk right toward the shed',answer:'Hold D (or →) now',tx:null,ty:null};
+    if(!tutJumped) return {idx:1,total:7,nudge:'Jump with Space',detail:'Press Space to hop onto the low grass ledges',answer:'Press Space while holding D',tx:null,ty:null};
+    if(!hasCloth && !clothOut) return {idx:2,total:7,nudge:'Conjure a cloth',detail:'Press T, type cloth, press Enter',answer:'T → cloth → Enter (costs 1 ink)',tx:null,ty:null};
     if(!hasCloth) return {idx:3,total:7,nudge:'Pick up the cloth (E)',detail:'Walk to the cloth, press E to take it — works right next to a jar',answer:'Stand by the cloth, press E',tx:null,ty:null,at:'cloth'};
     if(dusty) return {idx:4,total:7,nudge:'Wipe a dusty jar (U)',detail:'Near a jar, press U 3× to wipe it clean',answer:'U on the jar: wipe ×3, read the label',tx:dusty.x,ty:dusty.y-20,at:'jar'};
-    if(!have() && !upWay) return {idx:5,total:7,nudge:'Conjure a way up',detail:'Press T, type ladder, press Enter — then shove it under a shelf',answer:'T → ladder → Enter, push it with A/D',tx:player.x+80,ty:player.y-40};
+    if(!have() && !upWay) return {idx:5,total:7,nudge:'Conjure a way up',detail:'Press T, type ladder, press Enter — then shove it under a shelf',answer:'T → ladder → Enter, push it with A/D',tx:null,ty:null};
     if(!have()) return {idx:6,total:7,nudge:'Climb + take the mugwort',detail:'Climb (W/S on ladder), E on the clean mugwort jar',answer:'Wrong jars say thyme/sage — leave them',tx:null,ty:null,at:'jar'};
     return {idx:7,total:7,nudge:'Carry it east through the door →',detail:'Walk right with mugwort: ravine islands, hills, exit door',answer:'Hold D — door only counts with mugwort',tx:exitArch.x,ty:exitArch.y-20,at:'exit'};
   }
