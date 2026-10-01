@@ -788,7 +788,8 @@ function drawSummon(g,s,glyph){
 }
 
 // upgraded apprentice: robe + stitching, belt, satchel, boots, 4 hairstyles, facing
-function drawApprentice(g,x,y,w,h,color,hair,facing,carry){
+// held: null | {word,kind} — the carried tool/herb drawn in the free hand (skipped while rope-carrying)
+function drawApprentice(g,x,y,w,h,color,hair,facing,carry,held){
   sh(g,x,y,w,h);
   const cx=x+w/2;
   // boots
@@ -826,6 +827,39 @@ function drawApprentice(g,x,y,w,h,color,hair,facing,carry){
   if(carry){ g.moveTo(cx,y+14); g.lineTo(cx+facing*4,y-8); }
   else { g.moveTo(cx,y+14); g.lineTo(cx+facing*10,y+24); }
   g.stroke();
+  // held object in the free hand (hands busy carrying rope → skip)
+  if(held && !carry){
+    const hx=cx+facing*10, hy=y+24;
+    const kind=held.kind||'tool';
+    if(kind==='herb'){
+      g.strokeStyle=C.moss; g.lineWidth=2;
+      g.beginPath(); g.moveTo(hx,hy+6); g.lineTo(hx,hy-8); g.stroke();
+      g.fillStyle=C.leaf;
+      [[-5,-4],[5,-5],[0,-9]].forEach(([dx,dy])=>{
+        g.beginPath(); g.moveTo(hx,hy+dy+4); g.lineTo(hx+dx,hy+dy); g.lineTo(hx,hy+dy-4); g.lineTo(hx-dx,hy+dy); g.closePath(); g.fill();
+        g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+      });
+    } else if(kind==='cloth'){
+      g.fillStyle=(held.word==='rag')?C.parch:C.cream;
+      g.fillRect(hx-7,hy-8,14,13);
+      g.strokeStyle=INK; g.lineWidth=1.5; g.strokeRect(hx-7,hy-8,14,13);
+      dash(g,hx-5,hy-5,hx+5,hy-5,C.parch);
+      g.beginPath(); g.moveTo(hx-7,hy+5); g.lineTo(hx+7,hy-8); g.stroke();
+    } else if(kind==='music'){
+      g.fillStyle=C.must; g.fillRect(hx-8,hy-6,16,5);
+      g.strokeStyle=INK; g.lineWidth=1.5; g.strokeRect(hx-8,hy-6,16,5);
+      g.fillStyle=INK; g.fillRect(hx-3,hy-5,2,2); g.fillRect(hx+1,hy-5,2,2);
+    } else if(kind==='broom'){
+      g.strokeStyle=C.bark; g.lineWidth=2.5;
+      g.beginPath(); g.moveTo(hx,hy-10); g.lineTo(hx,hy+2); g.stroke();
+      g.fillStyle=C.must;
+      g.beginPath(); g.moveTo(hx-5,hy+2); g.lineTo(hx+5,hy+2); g.lineTo(hx+3,hy+9); g.lineTo(hx-3,hy+9); g.closePath(); g.fill();
+      g.strokeStyle=INK; g.lineWidth=1.5; g.stroke();
+    } else {
+      g.fillStyle=C.clay; g.fillRect(hx-6,hy-7,12,12);
+      g.strokeStyle=INK; g.lineWidth=1.5; g.strokeRect(hx-6,hy-7,12,12);
+    }
+  }
 }
 
 // Dialogue headshots (64x64): witch + apprentice, same paper/embroidery treatment.

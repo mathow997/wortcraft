@@ -15,16 +15,34 @@ button{background:var(--parchment);border:2px solid var(--ink);padding:8px 14px;
   font-family:inherit;cursor:pointer;box-shadow:3px 3px 0 rgba(0,0,0,.35)}
 button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.35)}
 #game{width:100%;background:#d9c9a3;border:3px solid var(--ink);image-rendering:pixelated}
-#hud{display:flex;align-items:center;gap:12px;margin-top:8px}
-#inventory{display:flex;gap:6px}
+#hud{display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap}
+#inventory{display:flex;gap:6px;background:#6a4a26;border:3px solid var(--ink);border-radius:14px 14px 18px 18px;
+  padding:8px 10px;box-shadow:3px 3px 0 rgba(0,0,0,.35), inset 0 0 0 2px #8a6a42;position:relative}
+#inventory::before{content:'';position:absolute;top:3px;left:10px;right:10px;border-top:2px dashed #d9a441;opacity:.7;pointer-events:none}
+#inventory .slot.bag{background:#3d2c17;font-size:22px;border-color:var(--gold)}
 .slot{width:40px;height:40px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;
   font-size:20px;background:#cbbb92;box-shadow:2px 2px 0 rgba(0,0,0,.3)}
 .slot.locked{opacity:.35;filter:grayscale(1)}
 #combine-prompt{background:#fff8;border:2px solid var(--ink);padding:6px 10px}
 #summon-bar{background:#f4ebd4;border:2px solid var(--ink);padding:6px 10px}
-#summon-input{font-family:inherit;border:2px solid var(--ink);padding:4px 8px;width:160px;background:#fff}
+#summon-bar.summon-perm{position:relative;display:flex;align-items:center;gap:8px;flex:1 1 320px;
+  background:linear-gradient(180deg,#f7efdb,#e9d9b4);border:2px solid var(--ink);
+  box-shadow:0 0 0 2px var(--gold),3px 3px 0 rgba(0,0,0,.35);padding-left:30px}
+#summon-bar.summon-perm::before{content:'';position:absolute;inset:2px;border:1px dashed var(--gold);opacity:.6;pointer-events:none}
+#summon-bar.summon-perm .summon-stars{position:absolute;left:9px;color:#8a6a1a;font-size:16px;
+  text-shadow:0 0 6px var(--gold);animation:twinkle 2.4s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.65}50%{opacity:1}}
+#summon-bar.summon-perm:focus-within{box-shadow:0 0 0 2px var(--gold),0 0 14px var(--gold),3px 3px 0 rgba(0,0,0,.35)}
+#summon-bar label{font-weight:bold;letter-spacing:.06em}
+#summon-input{font-family:inherit;border:2px solid var(--ink);padding:4px 8px;width:160px;background:#fff8}
+.ink-pill{display:inline-flex;align-items:center;gap:4px;border:2px solid var(--ink);border-radius:999px;
+  background:#2e3a68;color:#f5efdd;padding:2px 10px;font-size:.9em;box-shadow:0 0 8px rgba(217,164,65,.8)}
+.ink-pill #ink-count{font-weight:bold}
 #quick-summon{display:flex;gap:6px}
-#quick-summon .quick{padding:4px 8px;font-size:.85em}
+#quick-summon .quick{position:relative;width:48px;height:48px;padding:2px;display:flex;align-items:center;justify-content:center}
+#quick-summon .quick .qicon{width:36px;height:36px;image-rendering:auto}
+#quick-summon .quick .qkey{position:absolute;top:-7px;left:-5px;min-width:17px;height:17px;border:2px solid var(--ink);
+  border-radius:50%;background:var(--gold);font-size:11px;line-height:13px;font-weight:bold}
 #summon-suggest{background:#fff8;border:2px dashed var(--ink);padding:6px 10px;margin-top:6px}
 #summon-suggest button{padding:4px 10px;font-size:.85em;margin-left:6px}
 #pause-log{max-height:150px;overflow:auto;margin:8px 0;font-size:.9em;min-width:240px}

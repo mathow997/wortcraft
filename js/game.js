@@ -103,8 +103,9 @@
     if(act==='resume') $('#pause').classList.add('hidden');
     if(act==='restart') { $('#pause').classList.add('hidden'); startLevel(currentBeatId); }
     if(act==='quit-map'){ $('#pause').classList.add('hidden'); buildMap(); show('map'); stopLoop(); }
-    if(act==='settings') $('#settings').classList.remove('hidden');
+    if(act==='settings') { syncGuideButtons(); $('#settings').classList.remove('hidden'); }
     if(act==='settings-close') $('#settings').classList.add('hidden');
+    if(act==='toggle-guide') setTutorial(!tutorialOn);
     if(act==='copy-journal'){
       const payload=JSON.stringify({exportedAt:new Date().toISOString(),entries:store.journal,report:journalReport(store.journal)});
       const done=ok=>{ const b=document.querySelector('[data-action="copy-journal"]'); if(b) b.textContent=ok?'Copied! Paste it to the developer.':'Copy failed'; };
@@ -113,7 +114,10 @@
         try{document.execCommand('copy');done(true);}catch{done(false);} ta.remove(); }
     }
   });
-  $('#btn-pause').onclick=()=>{ buildPauseLog(); $('#pause').classList.remove('hidden'); };
+  $('#btn-pause').onclick=()=>{ buildPauseLog(); syncGuideButtons(); $('#pause').classList.remove('hidden'); };
+  document.addEventListener('change', e=>{
+    if(e.target && e.target.id==='set-guide') setTutorial(e.target.checked);
+  });
 
   // ---- LEVEL: beat 1 vertical slice (harder + summon demo) ----
   const canvas=$('#game'), ctx=canvas.getContext('2d');
@@ -124,6 +128,10 @@
   let world={x:0,y:-360,w:3200,h:900};
   let beat=null; // current BEATS entry
   let player, solids, summons, ropes, pickups, npcs, swarms, muds, checkpoint, exitArch, thorns, running=false, raf=0, counts={}, tools=[], lastE=0, hasCloth=false, revealed=false, won=false, fx=[], ink=MAX_INK, climbT=0, decor=null, facing=1;
+  // Guided tutorial (level_01 only, default on): state-driven steps + layered hints.
+  // Research: teach through play, moment of need, fewer words, scaffolded hints.
+  let tutorialOn=true; try{ tutorialOn=localStorage.getItem('wort_tutorial')!=='off'; }catch{}
+  let tutMoved=false, tutJumped=false, tutStepTime=0, tutLastIdx=-1;
   function have(){ return (counts[beat.need]||0)>0; } // beat herb carried this run
   const grabbed={rope:null,idx:0,cd:0}; // rope rider state
   const carried={rope:null,end:'last'}; // carried loose end (pick up + move before tying)
@@ -242,22 +250,40 @@
   // ---- beats: each chapter is data + a builder + hooks into the shared engine ----
   const BEATS={
   level_01:{
-    hud:'A/D move+push · Space jump · E wipe/take/grab/tie · U use · T conjure · X banish · find mugwort, take it home →',
+    hud:'A/D move+push · Space jump · E take/grab/tie · U use · T conjure · X banish · find mugwort, take it home →',
     world:{x:0,y:-360,w:3200,h:900}, spawn:{x:60,y:380}, ink:50,
     fallMsg:'Mind the gap! Conjure a bridge (T) or hop the islands.',
     need:'mugwort', needName:'Mugwort', intro:'dialogue_level01_intro', pickup:'dialogue_beat1_pickup', outro:'dialogue_level01_outro',
     hint(){
       const hasClothTool=tools.some(t=>t.kind==='cloth');
       if(!hasCloth && !hasClothTool && !summons.some(s=>s.tool==='cloth'))
-        return 'Try: cloth (T) — then take it (E)';
+        return 'Try: cloth (T) — then take it (E), wipe with (U)';
       if(pickups.some(p=>p.dust>0))
-        return (hasCloth||hasClothTool) ? 'Wipe a dusty jar (E) to read its label' : 'Try: cloth (T) — then take it (E)';
+        return (hasCloth||hasClothTool) ? 'Wipe a dusty jar (U) to read its label' : 'Take the cloth (E) — then wipe with (U)';
       if(!summons.some(s=>s.b==='climb'||s.b==='float') && !ropes.length)
         return 'Try: ladder (T) — shove it under a shelf';
       return '';
     },
     decor:()=>Art.buildDecor(), decorDy:360, arch:false, capAll:false,
-    hook:{ update(){ if(player.x>950 && checkpoint.x<950){ checkpoint={x:950,y:380}; flashHint('Checkpoint — the shed is behind you. East, home.'); } } },
+    hook:{
+      update(){ if(player.x>950 && checkpoint.x<950){ checkpoint={x:950,y:380}; flashHint('Checkpoint — the shed is behind you. East, home.'); } },
+      onE(){
+        const j=nearPickup();
+        if(j && j.dust>0){ takePickup(j); return true; }
+        return false;
+      },
+      use(){
+        const c=playerCenter();
+        let best=null,bd=100;
+        for(const j of pickups){
+          if(j.dust<=0) continue;
+          const d=Math.hypot((j.x+j.w/2)-c.x,(j.y+j.h/2)-c.y);
+          if(d<bd){ bd=d; best=j; }
+        }
+        if(best) useClothOn(best);
+        else flashHint('Nothing here needs using — try E to take.');
+      }
+    },
     build(){
       solids=[
         {x:0,y:484,w:1600,h:120,id:'groundA'},
@@ -483,13 +509,14 @@
     beat=BEATS[currentBeatId];
     show('level');
     world={...beat.world};
-    $('#summon-bar').classList.add('hidden');
+    summonInput.value=''; clearSuggest(); // summon bar is permanent — always visible, never hidden
     checkpoint={...beat.spawn};
     player=Engine.physicsBody(beat.spawn.x,beat.spawn.y,28,44);
     solids=[]; thorns=[]; pickups=[]; npcs=[]; swarms=[]; muds=[]; summons=[]; ropes=[];
     grabbed.rope=null; grabbed.cd=0; carried.rope=null; climbT=0;
     counts={}; tools=[]; hasCloth=false; revealed=false; won=false; fx=[]; ink=beat.ink; updateInk();
-    summonLog=[]; lastThree=[]; buildQuick();
+    tutMoved=false; tutJumped=false; tutStepTime=0; tutLastIdx=-1;
+    summonLog=[]; lastThree=[]; buildQuick(); syncGuideButtons();
     exitArch={...beat.exit};
     beat.build();
     decor=beat.decor();
@@ -508,6 +535,10 @@
   function herbIcon(id){ const h=WORT.herbs.find(h=>h.id===id); return h?h.icon:'🌿'; }
   function buildInventory(){
     const inv=$('#inventory'); inv.innerHTML='';
+    // satchel: everything carried lives in the bag
+    const bag=document.createElement('div'); bag.className='slot bag'; bag.textContent='🎒';
+    bag.title='Satchel — herbs & tools you carry (held tool also shows in hand)';
+    inv.appendChild(bag);
     WORT.herbs.filter(h=>(counts[h.id]||0)>0).forEach(h=>{
       const d=document.createElement('div'); d.className='slot'; d.textContent=h.icon; d.title=h.displayName+(counts[h.id]>1?' ×'+counts[h.id]:'');
       if(counts[h.id]>1){ const b=document.createElement('b'); b.textContent='×'+counts[h.id]; b.style.cssText='font-size:10px'; d.appendChild(b); }
@@ -554,7 +585,8 @@
     return (bd<=1||(bd===2&&best.length>=6))?best:null;
   }
   function clearSuggest(){ pendingSuggest=null; const box=$('#summon-suggest'); if(box){ box.innerHTML=''; box.classList.add('hidden'); } }
-  function closeSummonBar(){ clearSuggest(); summonInput.value=''; summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
+  // summon bar is permanent: closing means clear + blur (focus back to the game), never hide
+  function closeSummonBar(){ clearSuggest(); summonInput.value=''; if(document.activeElement===summonInput) summonInput.blur(); }
   function showSuggest(orig,match){
     pendingSuggest={orig,match};
     const box=$('#summon-suggest'); box.innerHTML='';
@@ -568,9 +600,9 @@
   addEventListener('keydown', e=>{
     if(!screens.level.classList.contains('active')) return;
     if(e.code==='KeyT' && document.activeElement!==summonInput && !won){
-      e.preventDefault(); clearSuggest(); $('#summon-bar').classList.remove('hidden'); summonInput.value=''; summonInput.focus();
+      e.preventDefault(); clearSuggest(); summonInput.focus(); summonInput.select();
     }
-    if(e.code==='Escape' && document.activeElement===summonInput){ summonInput.blur(); $('#summon-bar').classList.add('hidden'); }
+    if(e.code==='Escape' && document.activeElement===summonInput){ closeSummonBar(); }
   });
   summonInput.addEventListener('keydown', e=>{
     e.stopPropagation();
@@ -597,7 +629,7 @@
     if(s.tool==='cloth') hasCloth=true;
     summons.splice(summons.indexOf(s),1);
     buildInventory();
-    flashHint(`Picked up the ${s.word}.`+(s.tool==='cloth'?' Wipe the jars (E).':(s.tool==='music'?' Press U to play it.':' Press U to wave it.')));
+    flashHint(`Picked up the ${s.word}.`+(s.tool==='cloth'?' Press U to wipe a dusty jar.':(s.tool==='music'?' Press U to play it.':' Press U to wave it.')));
   }
   function dropTool(){ // double-E: set it down as a real object at your feet
     const t=tools.shift(); if(!t) return;
@@ -699,10 +731,30 @@
     const e={w:word,o:outcome,b:currentBeatId,t:Date.now()};
     summonLog.push(e); store.logSummon(e);
   }
+  // quick-slot icon: mini rendering of the real sprite (aspect-preserved), rope = ➰
+  function quickIcon(word){
+    const cv=document.createElement('canvas'); cv.width=36; cv.height=36; cv.className='qicon';
+    const g=cv.getContext('2d');
+    if(ROPE_WORDS[word]||word==='rope'||word==='vine'||word==='chain'){
+      g.fillStyle='#2e3a68'; g.font='22px Georgia'; g.fillText('➰',6,27);
+      return cv;
+    }
+    const s=specFor(word);
+    if(!s||!s.w||!s.h){ g.fillStyle='#2e3a68'; g.font='bold 20px Georgia'; g.fillText('?',13,26); return cv; }
+    const sc=Math.min(28/s.w,26/s.h);
+    g.save(); g.translate(18,19); g.scale(sc,sc); g.translate(-s.w/2,-s.h/2);
+    Art.drawSummon(g,{x:0,y:0,w:s.w,h:s.h,word,c:s.c},'');
+    g.restore();
+    return cv;
+  }
   function buildQuick(){
     const q=$('#quick-summon'); if(!q) return; q.innerHTML='';
     lastThree.forEach((w,i)=>{
-      const b=document.createElement('button'); b.type='button'; b.className='quick'; b.textContent=`${i+1} ${w}`;
+      const b=document.createElement('button'); b.type='button'; b.className='quick';
+      b.title=`${i+1}: ${w} — click or press ${i+1} to conjure again`;
+      b.setAttribute('aria-label',`conjure ${w}`);
+      const k=document.createElement('span'); k.className='qkey'; k.textContent=i+1; b.appendChild(k);
+      b.appendChild(quickIcon(w));
       b.onclick=()=>{ if(!won && !dialogueOpen()) conjure(w); };
       q.appendChild(b);
     });
@@ -715,6 +767,39 @@
       if(e.o==='rejected') k.rejected++; else if(e.o==='fallback') k.fallback++; else k.ok++; });
     return Object.values(m).sort((a,b)=>b.n-a.n);
   }
+  // ---- guided tutorial: state-driven steps for level_01, layered hint escalation ----
+  // Step advances on what the player HAS done (not timers), hint detail escalates
+  // the longer they sit on one step: gentle nudge (0-7s) → explicit keys (7-18s) → exact answer (18s+).
+  function tutorialStep(){
+    if(!tutorialOn || currentBeatId!=='level_01' || !beat || won) return null;
+    const clothOut=summons.some(s=>s.tool==='cloth');
+    const dusty=pickups.find(p=>p.dust>0);
+    const upWay=summons.some(s=>s.b==='climb'||s.b==='float')||ropes.length>0;
+    if(!tutMoved) return {idx:0,total:7,nudge:'Walk with A / D',detail:'Hold D to walk right toward the shed',answer:'Hold D (or →) now',tx:player.x+60,ty:player.y-30};
+    if(!tutJumped) return {idx:1,total:7,nudge:'Jump with Space',detail:'Press Space to hop onto the low grass ledges',answer:'Press Space while holding D',tx:player.x+60,ty:player.y-30};
+    if(!hasCloth && !clothOut) return {idx:2,total:7,nudge:'Conjure a cloth',detail:'Press T, type cloth, press Enter',answer:'T → cloth → Enter (costs 1 ink)',tx:player.x+80,ty:player.y-40};
+    if(!hasCloth) return {idx:3,total:7,nudge:'Pick up the cloth (E)',detail:'Walk to the cloth, press E to take it — works right next to a jar',answer:'Stand by the cloth, press E',tx:null,ty:null,at:'cloth'};
+    if(dusty) return {idx:4,total:7,nudge:'Wipe a dusty jar (U)',detail:'Near a jar, press U 3× to wipe it clean',answer:'U on the jar: wipe ×3, read the label',tx:dusty.x,ty:dusty.y-20,at:'jar'};
+    if(!have() && !upWay) return {idx:5,total:7,nudge:'Conjure a way up',detail:'Press T, type ladder, press Enter — then shove it under a shelf',answer:'T → ladder → Enter, push it with A/D',tx:player.x+80,ty:player.y-40};
+    if(!have()) return {idx:6,total:7,nudge:'Climb + take the mugwort',detail:'Climb (W/S on ladder), E on the clean mugwort jar',answer:'Wrong jars say thyme/sage — leave them',tx:null,ty:null,at:'jar'};
+    return {idx:7,total:7,nudge:'Carry it east through the door →',detail:'Walk right with mugwort: ravine islands, hills, exit door',answer:'Hold D — door only counts with mugwort',tx:exitArch.x,ty:exitArch.y-20,at:'exit'};
+  }
+  function setTutorial(on){
+    tutorialOn=on;
+    try{ localStorage.setItem('wort_tutorial',on?'on':'off'); }catch{}
+    tutStepTime=0; tutLastIdx=-1;
+    syncGuideButtons();
+    flashHint(on?'Guide on — follow the ✦ steps (H to hide).':'Guide off — free play (H to show).');
+  }
+  function syncGuideButtons(){
+    document.querySelectorAll('[data-action="toggle-guide"]').forEach(b=>{ b.textContent=tutorialOn?'Guide: ON (H)':'Guide: OFF (H)'; });
+    const c=$('#set-guide'); if(c) c.checked=tutorialOn;
+  }
+  addEventListener('keydown', e=>{
+    if(e.code!=='KeyH' || !screens.level.classList.contains('active')) return;
+    if(document.activeElement===summonInput) return;
+    setTutorial(!tutorialOn);
+  });
   function buildPauseLog(){
     const box=$('#pause-log'); if(!box) return; box.innerHTML='';
     const cp=document.querySelector('[data-action="copy-journal"]');
@@ -991,13 +1076,18 @@
     const c=playerCenter();
     return pickups.find(j=>Math.hypot((j.x+j.w/2)-c.x,(j.y+j.h/2)-c.y)<85) || null;
   }
-  function wipePickup(j){
-    if(j.dust>0 && !j.free && !hasCloth){ flashHint('Dust an inch thick — bare hands will smear it. Conjure a cloth (T).'); return; }
+  // UNIFIED RULE: E takes (tool / clean herb / rope), U uses (cloth wipe, music, broom, herb burn).
+  // E never consumes a tool; U never picks anything up.
+  function takePickup(j){
     if(j.dust>0){
-      j.dust--;
-      for(let i=0;i<6;i++) fx.push({x:j.x+Math.random()*j.w,y:j.y+Math.random()*j.h,vx:(Math.random()-.5)*90,vy:-Math.random()*90,life:.5});
-      if(j.dust===0) flashHint(`Wiped clean — the label reads "${j.label}".`);
-    } else if(j.herbId===beat.need){
+      if(!hasCloth){
+        if(nearTool()) flashHint('Pick up the cloth first (E) — then press U to wipe.');
+        else flashHint('Dust an inch thick — bare hands will smear it. Conjure a cloth (T), take it (E), wipe (U).');
+      }
+      else flashHint('Press U to wipe with the cloth.');
+      return;
+    }
+    if(j.herbId===beat.need){
       counts[j.herbId]=(counts[j.herbId]||0)+1;
       if(counts[j.herbId]===1) playDialogue(beat.pickup);
       store.addHerb(j.herbId); buildInventory();
@@ -1006,6 +1096,19 @@
     } else if(j.herbId!==beat.need){
       flashHint(`${j.label[0].toUpperCase()+j.label.slice(1)} — the charm asks for ${beat.need}. Leave it.`);
     }
+  }
+  function useClothOn(j){
+    if(!j || j.dust<=0) return false;
+    if(!hasCloth){
+      if(nearTool()) flashHint('Pick up the cloth first (E) — then press U to wipe.');
+      else flashHint('Bare hands will smear it — conjure a cloth (T), take it (E), then wipe (U).');
+      return true;
+    }
+    j.dust--;
+    for(let i=0;i<6;i++) fx.push({x:j.x+Math.random()*j.w,y:j.y+Math.random()*j.h,vx:(Math.random()-.5)*90,vy:-Math.random()*90,life:.5});
+    if(j.dust===0) flashHint(`Wiped clean — the label reads "${j.label}".`);
+    else flashHint(`Wiping… ${j.dust} layer${j.dust>1?'s':''} left (U again).`);
+    return true;
   }
   function standingOn(p,s){ return p.y+p.h<=s.y+9 && p.y+p.h>=s.y-9 && p.x+p.w>s.x+2 && p.x<s.x+s.w-2; }
   // pushing: walk into a grounded summon to shove it (ladder into place, plank over thorns).
@@ -1107,6 +1210,9 @@
   function update(dt){
     // freeze movement while dialogue open (fixes Space-jump conflict + stuck feeling)
     if(dialogueOpen()){ render(); return; }
+    // tutorial step timer: escalate hint detail the longer one step sticks
+    const ts=tutorialStep && tutorialStep();
+    if(ts){ if(ts.idx!==tutLastIdx){ tutLastIdx=ts.idx; tutStepTime=0; } else tutStepTime+=dt; }
     updateSummons(dt);
     if(beat.hook.update) beat.hook.update(dt);
     if(grabbed.cd>0) grabbed.cd-=dt;
@@ -1123,13 +1229,14 @@
     player.vx=0;
     if(keys['ArrowLeft']||keys['KeyA']) player.vx=-speed;
     if(keys['ArrowRight']||keys['KeyD']) player.vx=speed;
+    if(player.vx!==0 && currentBeatId==='level_01') tutMoved=true;
     if(player.vx>0) facing=1; else if(player.vx<0) facing=-1;
     if(muds.some(m=>Engine.overlap(player,m))) player.vx*=0.45; // wading through swamp
     const ladderRide=summons.find(s=>s.b==='climb' && Engine.overlap(player,{x:s.x-8,y:s.y-8,w:s.w+16,h:s.h+16}));
     const aimingHook=summons.some(s=>s.b==='hook'&&s.aiming);
     if(aimingHook&&keys['Space']){ fireHooks(); keys['Space']=false; } // loose the hook, don't jump
-    else if(keys['Space']&&(player.onGround||ladderRide)) player.vy=-780;
-    else if((keys['ArrowUp']||keys['KeyW'])&&player.onGround) player.vy=-780;
+    else if(keys['Space']&&(player.onGround||ladderRide)) { player.vy=-780; if(currentBeatId==='level_01') tutJumped=true; }
+    else if((keys['ArrowUp']||keys['KeyW'])&&player.onGround) { player.vy=-780; if(currentBeatId==='level_01') tutJumped=true; }
     tryPush(player.vx*dt); // shove grounded summons before resolving player collision
     Engine.moveAndCollide(player,allSolids(),dt);
     // climb: scale ladder/rope/pole with W/S after physics
@@ -1165,17 +1272,21 @@
     }
     if(!inMud) for(const m of muds) m.sink=0;
 
-    // dusty pickups: E wipes a layer; a clean need-herb is taken, wrong pickups named
-    // hook.onE gets NPC business (goat, swarms, wisp) before rope carry/grab
-    // pickup prompt + E
+    // UNIFIED E/U: E takes (loose tool → clean herb → NPC hint → rope), U uses.
+    // A loose tool ALWAYS wins E, even standing next to a jar — summon,
+    // then E picks it up where it lands. Dusty jars never wipe on E.
     const pickup=nearPickup();
     const loose=nearTool();
-    $('#combine-prompt').classList.toggle('hidden',!pickup&&!loose);
-    if(pickup) $('#combine-name').textContent=(pickup.dust>0&&!pickup.free&&!hasCloth)?'a cloth first (T)':(pickup.dust>0?'wipe':'take');
+    const wantLoose=loose && !tools.some(t=>t.kind===loose.tool);
+    const showEPrompt=wantLoose||loose||(pickup&&pickup.dust<=0);
+    $('#combine-prompt').classList.toggle('hidden',!showEPrompt);
+    if(wantLoose) $('#combine-name').textContent='take '+loose.word;
+    else if(pickup&&pickup.dust<=0) $('#combine-name').textContent='take';
     else if(loose) $('#combine-name').textContent='take '+loose.word;
     if(keys['KeyE'] && grabbed.cd<=0){
       let acted=false;
-      if(pickup){ wipePickup(pickup); acted=true; }
+      if(wantLoose){ takeTool(loose); acted=true; }
+      else if(pickup){ takePickup(pickup); acted=true; }
       else if(loose){ takeTool(loose); acted=true; }
       else if(beat.hook.onE && beat.hook.onE()){ acted=true; }
       else if(carried.rope){ carryTieOrDrop(); acted=true; }
@@ -1273,10 +1384,19 @@
       }
       if(bx){ ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia'; ctx.fillText('X: banish',bx.x-30,bx.y-24); }
     }
-    // E hint over a nearby loose tool
+    // E hint over a nearby loose tool (always E to take, even next to a jar)
     if(!won){
       const t=nearTool();
       if(t){ ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia'; ctx.fillText('E: take',t.x-6,t.y-12); }
+    }
+    // U hint over a nearby dusty jar (mirrors goat/swarm U hints — E never wipes)
+    if(!won && currentBeatId==='level_01'){
+      const c=playerCenter();
+      const j=pickups.find(j=>j.dust>0 && Math.hypot((j.x+j.w/2)-c.x,(j.y+j.h/2)-c.y)<100);
+      if(j){
+        ctx.fillStyle='#2e3a68'; ctx.font='bold 13px Georgia';
+        ctx.fillText(hasCloth?'U: wipe':'needs cloth…',j.x-12,j.y-14);
+      }
     }
     // thorns hazard: bare spikes, no label
     thorns.forEach(t=>{
@@ -1319,7 +1439,11 @@
     // apprentice paper doll (creation-screen hair, arm raised when carrying rope)
     const ch=store.char||{clothingColor:'#b3552e',hairstyleId:'hair_01'};
     const hairIdx=Math.max(0,Math.min(3,(parseInt((ch.hairstyleId||'hair_01').slice(-2),10)||1)-1));
-    Art.drawApprentice(ctx,player.x,player.y,player.w,player.h,ch.clothingColor,hairIdx,facing,!!carried.rope);
+    // held tool shows in the hand; otherwise the carried herb does
+    const heldTool=tools.length?tools[tools.length-1]:null;
+    const heldHerb=(!heldTool&&beat&&counts[beat.need]>0)?beat.need:null;
+    const held=heldTool?{word:heldTool.word,kind:heldTool.kind}:(heldHerb?{word:heldHerb,kind:'herb'}:null);
+    Art.drawApprentice(ctx,player.x,player.y,player.w,player.h,ch.clothingColor,hairIdx,facing,!!carried.rope,held);
     fx.forEach(p=>{ctx.globalAlpha=Math.max(0,Math.min(1,p.life));if(p.txt){ctx.fillStyle='#2e3a68';ctx.font='16px Georgia';ctx.fillText(p.txt,p.x,p.y);}else{ctx.fillStyle='#f4ebd4';ctx.fillRect(p.x,p.y,6,6);}ctx.globalAlpha=1;});
     ctx.restore();
     if(beat.dim){ // forest dark: flat wash with a lit ring around the apprentice
@@ -1333,9 +1457,27 @@
     ctx.fillStyle='#2e3a68'; ctx.font='14px Georgia';
     ctx.fillText(beat.hud, 12, 20);
     const nm=(store.char&&store.char.name)||'Apprentice';
-    ctx.fillText(nm, 12, 40);
-    const hh=beat.hint && beat.hint(); // contextual summon suggestion
-    if(hh){ ctx.fillStyle='#b3552e'; ctx.font='bold 14px Georgia'; ctx.fillText('✦ '+hh, 12, 58); }
+    ctx.fillText(nm+(tutorialOn&&currentBeatId==='level_01'?'  ·  H: hide guide':'  ·  H: guide'), 12, 40);
+    const tut=tutorialStep();
+    if(tut){
+      const msg=tutStepTime>18?tut.answer:(tutStepTime>7?tut.detail:tut.nudge);
+      ctx.fillStyle='#2e3a68'; ctx.font='bold 14px Georgia';
+      ctx.fillText(`✦ ${tut.idx+1}/${tut.total+1} ${msg}`, 12, 58);
+      // in-world marker: pulsing ring on the current target
+      let mx=tut.tx, my=tut.ty;
+      if(tut.at==='cloth'){ const s=summons.find(s=>s.tool==='cloth'); if(s){ mx=s.x+s.w/2; my=s.y-14; } else mx=null; }
+      if(tut.at==='jar'){ const j=pickups.find(p=>p.dust>0)||pickups[0]; if(j){ mx=j.x+j.w/2; my=j.y-14; } else mx=null; }
+      if(tut.at==='exit'){ mx=exitArch.x+exitArch.w/2; my=exitArch.y-14; }
+      if(mx!=null){
+        const r=10+3*Math.sin(performance.now()/280);
+        ctx.strokeStyle='#b3552e'; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.arc(mx,my-8,r,0,7); ctx.stroke();
+        ctx.fillStyle='#b3552e'; ctx.font='bold 16px Georgia'; ctx.fillText('▼',mx-6,my-16);
+      }
+    } else {
+      const hh=beat.hint && beat.hint(); // contextual summon suggestion
+      if(hh){ ctx.fillStyle='#b3552e'; ctx.font='bold 14px Georgia'; ctx.fillText('✦ '+hh, 12, 58); }
+    }
   }
 
   buildMap();

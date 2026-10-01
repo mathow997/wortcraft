@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wortcraft — A medieval puzzle-platformer</title>
-<link rel="stylesheet" href="css/style.css?v=8">
+<link rel="stylesheet" href="css/style.css?v=9">
 <script>
 // visible error overlay: game bugs report themselves instead of blank-screening
 window.addEventListener('error', e=>{
@@ -61,7 +61,7 @@ window.addEventListener('error', e=>{
       <div id="inventory"></div>
       <div id="spell-indicator"></div>
       <div id="combine-prompt" class="hidden">Press <b>E</b> to use <span id="combine-name"></span></div>
-      <div id="summon-bar" class="hidden">Type: <input id="summon-input" type="text" placeholder="ladder, cloth, rope, balloon…" maxlength="16"> <span class="muted">(T to open, Enter to conjure, Esc to close · ink <span id="ink-count">3</span>)</span></div>
+      <div id="summon-bar" class="summon-perm"><span class="summon-stars" aria-hidden="true">✦</span><label for="summon-input">Speak:</label> <input id="summon-input" type="text" placeholder="ladder, cloth, rope…" maxlength="16" autocomplete="off" spellcheck="false"> <span class="ink-pill" title="Conjuring ink — banish (X) refunds 1">✨<span id="ink-count">50</span></span></div>
       <div id="quick-summon" title="Last 3 summons this level — click or press 1/2/3 to conjure again"></div>
       <button id="btn-pause">II</button>
     </div>
@@ -83,6 +83,7 @@ window.addEventListener('error', e=>{
     <div class="pause-box">
       <h3>Paused</h3>
       <button data-action="resume">Resume</button>
+      <button data-action="toggle-guide">Guide: ON (H)</button>
       <button data-action="fieldbook" data-from="pause">Field Book</button>
       <button data-action="copy-journal">Copy summon journal</button>
       <div id="pause-log"></div>
@@ -96,15 +97,16 @@ window.addEventListener('error', e=>{
   <div id="settings" class="hidden">
     <div class="pause-box">
       <h3>Settings</h3>
+      <label><input type="checkbox" id="set-guide" checked> Guide steps in level 1 (H)</label><br>
       <label><input type="checkbox" id="set-reduced" disabled> Reduced motion (v2)</label>
       <p class="muted">Minimal for v1.</p>
       <button data-action="settings-close">Close</button>
     </div>
   </div>
 </div>
-<script src="js/data.js?v=8"></script>
-<script src="js/engine.js?v=8"></script>
-<script src="js/art.js?v=8"></script>
-<script src="js/game.js?v=8"></script>
+<script src="js/data.js?v=9"></script>
+<script src="js/engine.js?v=9"></script>
+<script src="js/art.js?v=9"></script>
+<script src="js/game.js?v=9"></script>
 </body>
 </html>

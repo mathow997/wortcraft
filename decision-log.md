@@ -282,3 +282,38 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     sit under gravity for ~2.2s so the apprentice can jump on, shiver for
     the last 0.7s as a liftoff tell, then rise — even if they settled.
     Shared gravity extracted to `settleSolid` rather than duplicated.
+
+44. **Cloth pickup priority.** `E` near a dusty jar always fired
+    `wipePickup` (which fails without cloth) instead of `takeTool`, so a
+    freshly conjured cloth had to be knocked away before it could be
+    picked up. Now a loose tool takes `E` priority when not yet carried;
+    `wipePickup` hints "pick up the cloth first" when one is nearby; level
+    1 HUD drops the misleading `U use` (wipe is `E`-only).
+
+45. **Guided tutorial + layered hints (level 1).** State-driven guide
+    (default on): move → jump → conjure cloth → take → wipe ×3 → conjure
+    ladder → take mugwort → exit east, with `✦ n/8` progress, pulsing
+    ▼ marker on the live target, and escalation (nudge 0-7s → explicit
+    keys 7-18s → exact answer 18s+). Toggle with `H`, pause-menu button,
+    or Settings checkbox (`wort_tutorial` persisted). Beats 2-4 keep the
+    old single-line `hint()` when the guide is off. Backend deferred:
+    staying on local `LEXICON` + manual journal promotion for now.
+
+46. **Unified E=take / U=use (cloth).** Cloth was the odd one out: `E`
+    both picked it up *and* wiped with it, so `E` near a jar stole the
+    pickup. Now all tools match — `E` takes (loose tool always wins `E`,
+    even next to a jar; `E` on a dusty jar only hints `U`), `U` uses
+    (`hook.use` wipes one dust layer, needs cloth equipped). Added
+    in-world `U: wipe` / `needs cloth…` tag above dusty jars (same
+    pattern as goat `U: soothe`), `E: take` stays over loose tools,
+    intro + tutorial reworded to `T conjure, E take, U use — always`.
+
+47. **Permanent speak bar, icon quick slots, satchel + hand.** Summon
+    bar is always visible (no hide/show; `T` focuses, `Enter` conjures +
+    blurs, `Esc` clears) with the how-to text removed and a magical
+    treatment (gold-stitched frame, twinkling ✦, glowing ink pill).
+    Quick slots render mini sprite icons (`Art.drawSummon` thumbnails,
+    ➰ for ropes) with key badges instead of word text. Inventory opens
+    with a 🎒 satchel slot and leather-stitched bag styling; the newest
+    held tool (or the carried herb) also draws in the apprentice's free
+    hand (`Art.drawApprentice` held param: cloth/music/broom/herb minis).
