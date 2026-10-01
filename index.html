@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wortcraft — A medieval puzzle-platformer</title>
-<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=15">
 <script>
 // visible error overlay: game bugs report themselves instead of blank-screening
 window.addEventListener('error', e=>{
@@ -61,11 +61,12 @@ window.addEventListener('error', e=>{
       <div id="inventory"></div>
       <div id="spell-indicator"></div>
       <div id="combine-prompt" class="hidden">Press <b>E</b> to use <span id="combine-name"></span></div>
-      <div id="summon-bar" class="summon-perm"><span class="summon-stars" aria-hidden="true">✦</span><label for="summon-input">Speak:</label> <input id="summon-input" type="text" placeholder="ladder, cloth, rope…" maxlength="16" autocomplete="off" spellcheck="false"> <span class="ink-pill" title="Conjuring ink — banish (X) refunds 1">✨<span id="ink-count">50</span></span></div>
+      <div id="summon-bar" class="summon-perm"><span class="summon-stars" aria-hidden="true">✦</span><label for="summon-input">Speak:</label> <input id="summon-input" type="text" placeholder="name something to summon…" maxlength="16" autocomplete="off" spellcheck="false"> <span class="ink-pill" title="Conjuring ink — banish (X) refunds 1">✨<span id="ink-count">50</span></span></div>
       <div id="quick-summon" title="Last 3 summons this level — click or press 1/2/3 to conjure again"></div>
       <button id="btn-pause">II</button>
     </div>
     <div id="trial-banner" class="hidden" title="Click to expand"><span class="tb-short"></span><span class="tb-full"></span></div>
+    <div id="hint-chip" class="hidden"></div>
     <div id="summon-suggest" class="hidden"></div>
     <div id="dialogue" class="hidden"><canvas id="dialogue-portrait" width="64" height="64"></canvas><div class="dlg-body"><p id="dialogue-speaker"></p><p id="dialogue-text"></p></div><span class="hint">click / Space ▸</span></div>
     <div id="overlay-beat4" class="hidden"></div>
@@ -105,9 +106,9 @@ window.addEventListener('error', e=>{
     </div>
   </div>
 </div>
-<script src="js/data.js?v=14"></script>
-<script src="js/engine.js?v=14"></script>
-<script src="js/art.js?v=14"></script>
-<script src="js/game.js?v=14"></script>
+<script src="js/data.js?v=15"></script>
+<script src="js/engine.js?v=15"></script>
+<script src="js/art.js?v=15"></script>
+<script src="js/game.js?v=15"></script>
 </body>
 </html>

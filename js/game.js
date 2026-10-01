@@ -266,14 +266,22 @@
     fallMsg:'Mind the gap! Conjure a bridge (T) or hop the islands.',
     need:'mugwort', needName:'Mugwort', intro:'dialogue_level01_intro', pickup:'dialogue_beat1_pickup', outro:'dialogue_level01_outro',
     hint(){
-      const hasClothTool=tools.some(t=>t.kind==='cloth');
-      if(!hasCloth && !hasClothTool && !summons.some(s=>s.tool==='cloth'))
-        return 'Try: cloth (T) — then take it (E), wipe with (U)';
-      if(pickups.some(p=>p.dust>0))
-        return (hasCloth||hasClothTool) ? 'Wipe a dusty jar (U) to read its label' : 'Take the cloth (E) — then wipe with (U)';
-      if(!summons.some(s=>s.b==='climb'||s.b==='float') && !ropes.length)
-        return 'Try: ladder (T) — shove it under a shelf';
-      return '';
+      // location-aware: what you need depends on where you stand
+      const c=playerCenter();
+      const near=(x,y,r)=>Math.hypot(x-c.x,y-c.y)<r;
+      if(have()) return near(exitArch.x+35,exitArch.y+60,420) ? 'Through the door — take it home →' : 'Mugwort in hand — east, home →';
+      const dusty=pickups.find(p=>p.dust>0);
+      if(dusty && near(dusty.x+dusty.w/2,dusty.y+dusty.h/2,230)){
+        if(hasCloth) return 'Wipe with the cloth (U)';
+        if(summons.some(s=>s.tool==='cloth')) return 'Take the cloth (E)';
+        return 'Dusty jars — conjure a cloth (T)';
+      }
+      if(dusty && c.x>900 && c.x<1800 && !summons.some(s=>s.b==='climb'||s.b==='float') && !ropes.length)
+        return 'High shelves — conjure a ladder (T), shove it under';
+      if(thorns.some(t=>near(t.x+t.w/2,t.y,260))) return 'Thorns bite — plank over, or climb above';
+      if(c.x>1500 && c.x<1950) return 'Mind the gap — bridge it (T) or hop the islands';
+      if(near(exitArch.x+35,exitArch.y+60,350)) return 'The door wants mugwort in hand';
+      return 'Ink answers any true name — speak (T) and try things';
     },
     decor:()=>Art.buildDecor(), decorDy:360, arch:false, capAll:false,
     hook:{
@@ -522,6 +530,7 @@
     world={...beat.world};
     summonInput.value=''; clearSuggest(); // summon bar is permanent — always visible, never hidden
     lastTbKey='\0'; const tb0=$('#trial-banner'); if(tb0){ tb0.classList.add('hidden'); tb0.classList.remove('open','stalled'); }
+    lastHhKey='\0'; const hc0=$('#hint-chip'); if(hc0) hc0.classList.add('hidden');
     checkpoint={...beat.spawn};
     player=Engine.physicsBody(beat.spawn.x,beat.spawn.y,28,44);
     solids=[]; thorns=[]; pickups=[]; npcs=[]; swarms=[]; muds=[]; summons=[]; ropes=[];
@@ -810,6 +819,15 @@
         playDialogue(beat.intro);
       });
     }
+  }
+  // hint chip: same parchment tag as the trial chip (rust text), fed by
+  // beat.hint(). Canvas text can't restyle per-state, so this lives in the DOM.
+  let lastHhKey='\0';
+  function syncHintChip(){
+    const el=$('#hint-chip'); if(!el) return;
+    const inTrial=currentBeatId==='level_01' && !trialsDone && trialStage>0;
+    const txt=(!inTrial && beat && beat.hint) ? (beat.hint()||'') : '';
+    if(txt!==lastHhKey){ lastHhKey=txt; el.classList.toggle('hidden',!txt); el.textContent=txt?('✦ '+txt):''; }
   }
   // trial chip: collapsed tag top-right (hover/click expands), pulses past 30s
   // stalled. Canvas can't hover, so this lives in the DOM, not the canvas text.
@@ -1551,6 +1569,8 @@
     ctx.fillText(beat.hud, 12, 20);
     const nm=(store.char&&store.char.name)||'Apprentice';
     ctx.fillText(nm+(tutorialOn&&currentBeatId==='level_01'?'  ·  H: hide guide':'  ·  H: guide'), 12, 40);
+    syncTrialChip();
+    syncHintChip();
     const tut=tutorialStep();
     if(tut){
       const msg=tutStepTime>18?tut.answer:(tutStepTime>7?tut.detail:tut.nudge);
@@ -1568,11 +1588,7 @@
         ctx.fillStyle='#b3552e'; ctx.font='bold 16px Georgia'; ctx.fillText('▼',mx-6,my-16);
       }
     } else {
-      const chipOn=syncTrialChip(); // DOM chip owns the hint line while trials run
-      if(!chipOn){
-        const hh=beat.hint && beat.hint(); // contextual summon suggestion
-        if(hh){ ctx.fillStyle='#b3552e'; ctx.font='bold 14px Georgia'; ctx.fillText('✦ '+hh, 12, 58); }
-      }
+      // DOM chips already synced above; canvas stays quiet here
     }
   }
 

@@ -55,6 +55,9 @@ button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.35)}
 #trial-banner:hover .tb-short,#trial-banner.open .tb-short{display:none}
 #trial-banner.stalled{animation:taskpulse 1.2s ease-in-out infinite;border-color:var(--accent)}
 @keyframes taskpulse{0%,100%{box-shadow:3px 3px 0 rgba(0,0,0,.3)}50%{box-shadow:0 0 14px var(--accent),3px 3px 0 rgba(0,0,0,.3)}}
+#hint-chip{position:absolute;top:44px;right:12px;z-index:4;max-width:300px;background:#f4ebd4;
+  border:2px solid var(--ink);box-shadow:3px 3px 0 rgba(0,0,0,.3);padding:4px 10px;font-size:.85em;
+  color:var(--accent);font-weight:bold}
 #pause-log{max-height:150px;overflow:auto;margin:8px 0;font-size:.9em;min-width:240px}
 #pause-log .logline{padding:1px 0}
 .hidden{display:none!important}

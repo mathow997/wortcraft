@@ -364,6 +364,15 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     stalled on one calling. Canvas hint line yields to the chip while
     trials run.
 
+55. **Hint chip + where-you-stand hints.** The orange canvas hint line
+    is now a parchment `#hint-chip` tag top-right, same dress as the
+    trial chip but rust text. Level 1 hints read position, not just
+    state: cloth/wipe lines near dusty jars, ladder near the high
+    shelves, thorns/ravine/door lines at each hazard, and a generic
+    "Ink answers any true name — speak (T) and try things" everywhere
+    else. Speak-box placeholder de-spoilered to "name something to
+    summon…".
+
 48. **Guide marker only on real targets.** The pulsing ▼ ring also drew
     on move/jump/conjure steps at an empty point beside the player,
     where it read as a stray artifact. Now it only appears over actual
