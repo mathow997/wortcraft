@@ -344,8 +344,18 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     gunning puffs (the reported "sparking"). Riding a strand now shows
     its controls in-world (`Space: let go · E: tie off`) since there was
     no hint at all. Pushing cascades: shoving into a touching row moves
-    the row (depth-capped, heavies slow, world geometry still stops
+    the row     (depth-capped, heavies slow, world geometry still stops
     all) — no physics engine required.
+
+53. **Trial context + persistent task.** The trials opened cold with no
+    reason to gather herbs — `dialogue_trial1` now starts with the
+    stakes (the patient worsens; the cure is the nine-wort salve; the
+    gathering falls to you) before the speaking test. And the stuck-at-
+    trial-1 report exposed the real defect: once the prompt dialogue was
+    dismissed, nothing on-screen said what to summon (guide banner is
+    suppressed during trials, refusal flashes last 1.8s). A persistent
+    `✦ Trial n/3` banner now names the current calling until it passes,
+    shown regardless of the guide toggle.
 
 48. **Guide marker only on real targets.** The pulsing ▼ ring also drew
     on move/jump/conjure steps at an empty point beside the player,

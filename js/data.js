@@ -52,7 +52,7 @@ npcs:[
   {id:"goat_bridge",displayName:"Startled Goat",appearsIn:"puzzle_02",behavior:"blocks_until_calmed",calmedBy:"chamomile"}
 ],
 dialogues:{
-  dialogue_trial1:{id:"dialogue_trial1",speaker:"witch",lines:["Hold a moment. Before the jars, before the mud — show me your speaking.","Ink answers any true name, spoken true. Three callings, and I shall know you ready.","First — call me a living thing. Aught with breath. Name it, and let it stand."]},
+  dialogue_trial1:{id:"dialogue_trial1",speaker:"witch",lines:["The patient back home worsens, and only the old charm will mend them — nine healing worts gathered and sung into one salve. That gathering falls to you.","But ere I send you out — hold a moment. Before the jars, before the mud, show me your speaking.","Ink answers any true name, spoken true. Three callings, and I shall know you ready.","First — call me a living thing. Aught with breath. Name it, and let it stand."]},
   dialogue_trial1_done:{id:"dialogue_trial1_done",speaker:"apprentice",lines:["It breathes! It stands!"]},
   dialogue_trial2:{id:"dialogue_trial2",speaker:"witch",lines:["Aye. Breath answers breath. Mind it, though — living things wander, and ink will not leash them.","Second — the high shelf. Your legs will not reach it, so your tongue must. Call what climbs or carries."]},
   dialogue_trial2_done:{id:"dialogue_trial2_done",speaker:"witch",lines:["Good. The shed is higher than any apprentice. Remember this reaching — the meadow grass grows high as well."]},

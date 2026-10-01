@@ -809,6 +809,15 @@
       });
     }
   }
+  // persistent trial task: the modal prompt can be dismissed, so the current
+  // calling must live on-screen until passed (this was the stuck-at-trial-1 bug)
+  function trialBanner(){
+    if(currentBeatId!=='level_01'||trialsDone||won) return null;
+    if(trialStage===1) return 'Trial 1/3 — call a living thing (aught with breath)';
+    if(trialStage===2) return 'Trial 2/3 — call what climbs or carries';
+    if(trialStage===3) return 'Trial 3/3 — call a thing of gladness (no use at all)';
+    return null;
+  }
   // ---- guided tutorial: state-driven steps for level_01, layered hint escalation ----
   // Step advances on what the player HAS done (not timers), hint detail escalates
   // the longer they sit on one step: gentle nudge (0-7s) → explicit keys (7-18s) → exact answer (18s+).
@@ -1542,8 +1551,12 @@
         ctx.fillStyle='#b3552e'; ctx.font='bold 16px Georgia'; ctx.fillText('▼',mx-6,my-16);
       }
     } else {
-      const hh=beat.hint && beat.hint(); // contextual summon suggestion
-      if(hh){ ctx.fillStyle='#b3552e'; ctx.font='bold 14px Georgia'; ctx.fillText('✦ '+hh, 12, 58); }
+      const tb=trialBanner(); // trials show even with the guide toggled off
+      if(tb){ ctx.fillStyle='#2e3a68'; ctx.font='bold 14px Georgia'; ctx.fillText('✦ '+tb, 12, 58); }
+      else {
+        const hh=beat.hint && beat.hint(); // contextual summon suggestion
+        if(hh){ ctx.fillStyle='#b3552e'; ctx.font='bold 14px Georgia'; ctx.fillText('✦ '+hh, 12, 58); }
+      }
     }
   }
 
