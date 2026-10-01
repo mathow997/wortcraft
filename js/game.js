@@ -115,6 +115,7 @@
     }
   });
   $('#btn-pause').onclick=()=>{ buildPauseLog(); syncGuideButtons(); $('#pause').classList.remove('hidden'); };
+  $('#trial-banner').onclick=()=>{ $('#trial-banner').classList.toggle('open'); };
   document.addEventListener('change', e=>{
     if(e.target && e.target.id==='set-guide') setTutorial(e.target.checked);
   });
@@ -520,6 +521,7 @@
     show('level');
     world={...beat.world};
     summonInput.value=''; clearSuggest(); // summon bar is permanent — always visible, never hidden
+    lastTbKey='\0'; const tb0=$('#trial-banner'); if(tb0){ tb0.classList.add('hidden'); tb0.classList.remove('open','stalled'); }
     checkpoint={...beat.spawn};
     player=Engine.physicsBody(beat.spawn.x,beat.spawn.y,28,44);
     solids=[]; thorns=[]; pickups=[]; npcs=[]; swarms=[]; muds=[]; summons=[]; ropes=[];
@@ -808,6 +810,21 @@
         playDialogue(beat.intro);
       });
     }
+  }
+  // trial chip: collapsed tag top-right (hover/click expands), pulses past 30s
+  // stalled. Canvas can't hover, so this lives in the DOM, not the canvas text.
+  let lastTbKey='\0';
+  function syncTrialChip(){
+    const el=$('#trial-banner'); if(!el) return false;
+    const tb=trialBanner();
+    const key=tb||'';
+    if(key!==lastTbKey){
+      lastTbKey=key;
+      el.classList.toggle('hidden',!tb);
+      if(tb){ el.querySelector('.tb-short').textContent=`✦ Trial ${trialStage}/3`; el.querySelector('.tb-full').textContent='✦ '+tb; }
+    }
+    el.classList.toggle('stalled', !!tb && trialHintT>30);
+    return !!tb;
   }
   // persistent trial task: the modal prompt can be dismissed, so the current
   // calling must live on-screen until passed (this was the stuck-at-trial-1 bug)
@@ -1551,9 +1568,8 @@
         ctx.fillStyle='#b3552e'; ctx.font='bold 16px Georgia'; ctx.fillText('▼',mx-6,my-16);
       }
     } else {
-      const tb=trialBanner(); // trials show even with the guide toggled off
-      if(tb){ ctx.fillStyle='#2e3a68'; ctx.font='bold 14px Georgia'; ctx.fillText('✦ '+tb, 12, 58); }
-      else {
+      const chipOn=syncTrialChip(); // DOM chip owns the hint line while trials run
+      if(!chipOn){
         const hh=beat.hint && beat.hint(); // contextual summon suggestion
         if(hh){ ctx.fillStyle='#b3552e'; ctx.font='bold 14px Georgia'; ctx.fillText('✦ '+hh, 12, 58); }
       }

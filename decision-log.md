@@ -357,6 +357,13 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     `✦ Trial n/3` banner now names the current calling until it passes,
     shown regardless of the guide toggle.
 
+54. **Trial chip collapses; pulses when stalled.** The persistent trial
+    banner ate a full HUD line, so it became a DOM tag top-right instead
+    (canvas text can't hover): collapsed `✦ Trial n/3` chip, full task
+    on hover or click (touch-friendly), glowing orange pulse past 30s
+    stalled on one calling. Canvas hint line yields to the chip while
+    trials run.
+
 48. **Guide marker only on real targets.** The pulsing ▼ ring also drew
     on move/jump/conjure steps at an empty point beside the player,
     where it read as a stray artifact. Now it only appears over actual
