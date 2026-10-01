@@ -318,6 +318,14 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     held tool (or the carried herb) also draws in the apprentice's free
     hand (`Art.drawApprentice` held param: cloth/music/broom/herb minis).
 
+50. **Stable two-row HUD, no quick badges.** The `U`-hint text in
+    `#spell-indicator` stretched row 1 and knocked quick slots onto a
+    new line mid-play. Now row 1 is fixed (satchel, ellipsis-clipped
+    indicator, prompt, 160px-reserved quick slots, pause) and the Speak
+    bar permanently owns row 2 full-width — nothing shifts whatever the
+    hint says. Number badges removed from quick icons (read as
+    notification dots); `1/2/3` keys still work and live on in tooltips.
+
 48. **Guide marker only on real targets.** The pulsing ▼ ring also drew
     on move/jump/conjure steps at an empty point beside the player,
     where it read as a stray artifact. Now it only appears over actual

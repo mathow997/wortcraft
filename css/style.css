@@ -16,6 +16,9 @@ button{background:var(--parchment);border:2px solid var(--ink);padding:8px 14px;
 button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.35)}
 #game{width:100%;background:#d9c9a3;border:3px solid var(--ink);image-rendering:pixelated}
 #hud{display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap}
+#spell-indicator{flex:1 1 120px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#summon-bar.summon-perm{order:6;flex:1 1 100%}
+#quick-summon{min-width:160px;min-height:50px}
 #inventory{display:flex;gap:6px;background:#6a4a26;border:3px solid var(--ink);border-radius:14px 14px 18px 18px;
   padding:8px 10px;box-shadow:3px 3px 0 rgba(0,0,0,.35), inset 0 0 0 2px #8a6a42;position:relative}
 #inventory::before{content:'';position:absolute;top:3px;left:10px;right:10px;border-top:2px dashed #d9a441;opacity:.7;pointer-events:none}
@@ -41,8 +44,6 @@ button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.35)}
 #quick-summon{display:flex;gap:6px}
 #quick-summon .quick{position:relative;width:48px;height:48px;padding:2px;display:flex;align-items:center;justify-content:center}
 #quick-summon .quick .qicon{width:36px;height:36px;image-rendering:auto}
-#quick-summon .quick .qkey{position:absolute;top:-7px;left:-5px;min-width:17px;height:17px;border:2px solid var(--ink);
-  border-radius:50%;background:var(--gold);font-size:11px;line-height:13px;font-weight:bold}
 #summon-suggest{background:#fff8;border:2px dashed var(--ink);padding:6px 10px;margin-top:6px}
 #summon-suggest button{padding:4px 10px;font-size:.85em;margin-left:6px}
 #pause-log{max-height:150px;overflow:auto;margin:8px 0;font-size:.9em;min-width:240px}

@@ -761,9 +761,8 @@
     const q=$('#quick-summon'); if(!q) return; q.innerHTML='';
     lastThree.forEach((w,i)=>{
       const b=document.createElement('button'); b.type='button'; b.className='quick';
-      b.title=`${i+1}: ${w} — click or press ${i+1} to conjure again`;
+      b.title=`${w} — click or press ${i+1} to conjure again`;
       b.setAttribute('aria-label',`conjure ${w}`);
-      const k=document.createElement('span'); k.className='qkey'; k.textContent=i+1; b.appendChild(k);
       b.appendChild(quickIcon(w));
       b.onclick=()=>{ if(!won && !dialogueOpen()) conjure(w); };
       q.appendChild(b);
