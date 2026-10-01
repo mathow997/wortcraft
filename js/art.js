@@ -506,7 +506,8 @@ function buildDecor(){
 }
 
 // conjured objects drawn as proper little things, not bare boxes
-function drawSummon(g,s,glyph){
+// hideLabel: for icon tiles (quick slots) — the word tag stays in-world only
+function drawSummon(g,s,glyph,hideLabel){
   const {x,y,w,h,word,c}=s;
   sh(g,x,y,w,h);
   const W=f=>{g.fillStyle=f;}, O=(lw=2.5)=>{g.strokeStyle=INK;g.lineWidth=lw;};
@@ -896,7 +897,7 @@ function drawSummon(g,s,glyph){
     g.beginPath(); g.moveTo(x+6,y+6); g.lineTo(x+w-6,y+h-6); g.stroke();
     g.fillStyle=INK; g.font='bold 14px Georgia'; g.fillText('?',cx-5,y+h-8);
   }
-  label();
+  if(!hideLabel) label();
 }
 
 // upgraded apprentice: robe + stitching, belt, satchel, boots, 4 hairstyles, facing

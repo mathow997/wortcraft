@@ -52,6 +52,12 @@ npcs:[
   {id:"goat_bridge",displayName:"Startled Goat",appearsIn:"puzzle_02",behavior:"blocks_until_calmed",calmedBy:"chamomile"}
 ],
 dialogues:{
+  dialogue_trial1:{id:"dialogue_trial1",speaker:"witch",lines:["Hold a moment. Before the jars, before the mud — show me your speaking.","Ink answers any true name, spoken true. Three callings, and I shall know you ready.","First — call me a living thing. Aught with breath. Name it, and let it stand."]},
+  dialogue_trial1_done:{id:"dialogue_trial1_done",speaker:"apprentice",lines:["It breathes! It stands!"]},
+  dialogue_trial2:{id:"dialogue_trial2",speaker:"witch",lines:["Aye. Breath answers breath. Mind it, though — living things wander, and ink will not leash them.","Second — the high shelf. Your legs will not reach it, so your tongue must. Call what climbs or carries."]},
+  dialogue_trial2_done:{id:"dialogue_trial2_done",speaker:"witch",lines:["Good. The shed is higher than any apprentice. Remember this reaching — the meadow grass grows high as well."]},
+  dialogue_trial3:{id:"dialogue_trial3",speaker:"witch",lines:["Third — and mark me well — call a thing of gladness. No use in it at all. Delight alone."]},
+  dialogue_trial3_done:{id:"dialogue_trial3_done",speaker:"witch",lines:["Ha! Even so. A charm sung joyless is but half a charm. Joy is the honey in the salve — never leave it out of your work.","Three callings, three answers. You are ready. Now — mugwort first. The jars wait, dusty as ever."]},
   dialogue_level01_intro:{id:"dialogue_level01_intro",speaker:"witch",lines:["Mugwort first. The potting shed keeps its jars on three high shelves — higher than any apprentice can jump, and the herb moves shelf to shelf.","An inch of dust on every jar, and bare hands will only smear it. Conjure a cloth (T), take it (E), wipe with it (U) to read the labels.","Your ink is good for any thing with a name. Speak the noun (T) and pay the ink, and there it stands — ladder, rope, balloon, whatever the moment wants. E takes, U uses — always."]},
   dialogue_beat1_pickup:{id:"dialogue_beat1_pickup",speaker:"apprentice",lines:["Mugwort. Mother of herbs.","One herb for the charm. Now walk it home — east, through the door."]},
   dialogue_level01_outro:{id:"dialogue_level01_outro",speaker:"witch",lines:["One herb found, eight to go.","The charm is patient. The patient is not — back out there soon."]},

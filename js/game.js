@@ -531,7 +531,11 @@
     beat.build();
     decor=beat.decor();
     buildInventory();
-    playDialogue(beat.intro);
+    if(currentBeatId==='level_01' && !trialsDone){
+      trialStage=0; trialHintT=0; trialHintLevel=0;
+      playDialogue('dialogue_trial1', ()=>{ trialStage=1; trialHintT=0; trialHintLevel=0; });
+    }
+    else playDialogue(beat.intro);
     running=true; let last=performance.now();
     const loop=(t)=>{
       if(!running) return;
@@ -723,6 +727,7 @@
       if(word==='hook'||word==='grapple'||word==='grappling'){ ns.aiming=true; } // held at hand until aimed + loosed
     }
     ink--; updateInk();
+    trialCheck(word, spec);
     logSummon(word, TOOL_KIND[word]?'tool':(spec.rope?'rope':(spec.wild?'fallback':spec.b)));
     lastThree=[word,...lastThree.filter(w=>w!==word)].slice(0,3); buildQuick();
     if(TOOL_KIND[word]) flashHint('There it is — pick it up (E), then press U to use it.');
@@ -753,7 +758,7 @@
     if(!s||!s.w||!s.h){ g.fillStyle='#2e3a68'; g.font='bold 20px Georgia'; g.fillText('?',13,26); return cv; }
     const sc=Math.min(28/s.w,26/s.h);
     g.save(); g.translate(18,19); g.scale(sc,sc); g.translate(-s.w/2,-s.h/2);
-    Art.drawSummon(g,{x:0,y:0,w:s.w,h:s.h,word,c:s.c},'');
+    Art.drawSummon(g,{x:0,y:0,w:s.w,h:s.h,word,c:s.c},'',true);
     g.restore();
     return cv;
   }
@@ -776,10 +781,39 @@
       if(e.o==='rejected') k.rejected++; else if(e.o==='fallback') k.fallback++; else k.ok++; });
     return Object.values(m).sort((a,b)=>b.n-a.n);
   }
+  // ---- witch trials: three callings before the errand (level_01, once ever) ----
+  // Trial hints stay vague first so the any-thing realization lands; examples
+  // only arrive after ~15s stuck, exact words after ~30s.
+  const TRIAL_ANIMALS=['bird','cat','dog','frog','rabbit','fish','mouse'];
+  let trialsDone=false; try{ trialsDone=localStorage.getItem('wort_trials')==='done'; }catch{}
+  let trialStage=0, trialHintT=0, trialHintLevel=0; // 0 = not waiting, 1/2/3 = awaiting that calling
+  function trialCheck(word, spec){
+    if(currentBeatId!=='level_01'||trialsDone||trialStage<=0) return;
+    if(trialStage===1){
+      if(TRIAL_ANIMALS.includes(word)){
+        trialStage=0;
+        playDialogue('dialogue_trial1_done', ()=>playDialogue('dialogue_trial2', ()=>{ trialStage=2; trialHintT=0; trialHintLevel=0; }));
+      }
+      else flashHint('That stands, but breathes not — call a living thing.');
+    } else if(trialStage===2){
+      if(spec && (spec.rope || spec.b==='climb' || spec.b==='float')){
+        trialStage=0;
+        playDialogue('dialogue_trial2_done', ()=>playDialogue('dialogue_trial3', ()=>{ trialStage=3; trialHintT=0; trialHintLevel=0; }));
+      }
+      else flashHint('That stands, but reaches not the shelf — call what climbs or carries.');
+    } else if(trialStage===3){
+      trialStage=0;
+      playDialogue('dialogue_trial3_done', ()=>{
+        trialsDone=true; try{ localStorage.setItem('wort_trials','done'); }catch{}
+        playDialogue(beat.intro);
+      });
+    }
+  }
   // ---- guided tutorial: state-driven steps for level_01, layered hint escalation ----
   // Step advances on what the player HAS done (not timers), hint detail escalates
   // the longer they sit on one step: gentle nudge (0-7s) → explicit keys (7-18s) → exact answer (18s+).
   function tutorialStep(){
+    if(currentBeatId==='level_01' && !trialsDone) return null; // trials run first
     if(!tutorialOn || currentBeatId!=='level_01' || !beat || won) return null;
     const clothOut=summons.some(s=>s.tool==='cloth');
     const dusty=pickups.find(p=>p.dust>0);
@@ -1222,6 +1256,15 @@
     // tutorial step timer: escalate hint detail the longer one step sticks
     const ts=tutorialStep && tutorialStep();
     if(ts){ if(ts.idx!==tutLastIdx){ tutLastIdx=ts.idx; tutStepTime=0; } else tutStepTime+=dt; }
+    // trial hint waves: vague riddle first, examples ~15s, exact words ~30s
+    if(currentBeatId==='level_01' && !trialsDone && trialStage>0){
+      trialHintT+=dt;
+      if(trialStage===1 && trialHintLevel===0 && trialHintT>15){ trialHintLevel=1; flashHint('Bird, beast, mouseling — aught with breath.'); }
+      else if(trialStage===1 && trialHintLevel===1 && trialHintT>30){ trialHintLevel=2; flashHint('Speak it: T → bird → Enter.'); }
+      else if(trialStage===2 && trialHintLevel===0 && trialHintT>15){ trialHintLevel=1; flashHint('What climbs, or is climbed — or what floats.'); }
+      else if(trialStage===2 && trialHintLevel===1 && trialHintT>30){ trialHintLevel=2; flashHint('Speak it: T → ladder → Enter.'); }
+      else if(trialStage===3 && trialHintLevel===0 && trialHintT>15){ trialHintLevel=1; flashHint('A song needs no use — drum, fire, kite, what you will.'); }
+    }
     updateSummons(dt);
     if(beat.hook.update) beat.hook.update(dt);
     if(grabbed.cd>0) grabbed.cd-=dt;

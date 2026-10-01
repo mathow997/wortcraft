@@ -325,6 +325,16 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     bar permanently owns row 2 full-width — nothing shifts whatever the
     hint says. Number badges removed from quick icons (read as
     notification dots); `1/2/3` keys still work and live on in tooltips.
+    Icon tiles no longer print the word tag (`drawSummon hideLabel`).
+
+51. **Witch trials: three callings (tutorial).** Level 1 opens with the
+    witch testing the speaking — living thing, then what climbs or
+    carries, then a thing of gladness — before the mugwort errand.
+    Validation is behavioral (animal list / `climb|float|rope` / any
+    success), wrong summons get an in-voice correction, and hints arrive
+    in waves (riddle → category ~15s → exact words ~30s) so the
+    summon-anything realization lands before examples do. One-time only
+    (`wort_trials` flag); replays go straight to the errand briefing.
 
 48. **Guide marker only on real targets.** The pulsing ▼ ring also drew
     on move/jump/conjure steps at an empty point beside the player,
