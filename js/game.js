@@ -181,9 +181,9 @@
   const REJECT_QUIPS=['The ink blots and refuses.','The charm has never heard of such a thing.','A monk faints somewhere.','The page itself seems offended.'];
   // ropelike words simulate as Verlet strands (see rope system below), not solids
   const ROPE_WORDS={
-    rope:{c:'#c9a44a',segs:12,len:14,g:1,damp:0.985},
-    vine:{c:'#5f8448',segs:12,len:14,g:0.9,damp:0.98},
-    chain:{c:'#9a9a92',segs:8,len:14,g:1.6,damp:0.99} };
+    rope:{c:'#c9a44a',segs:12,len:14,g:1,damp:0.985,iters:5},
+    vine:{c:'#5f8448',segs:12,len:14,g:0.9,damp:0.98,iters:5},
+    chain:{c:'#9a9a92',segs:12,len:16,g:1.3,damp:0.99,iters:9} };
   function specFor(word){
     if(ROPE_WORDS[word]) return {rope:true,word,...ROPE_WORDS[word]};
     if(LEXICON[word]){ const [c,w,h,b]=LEXICON[word]; return {w,h,c,b}; }
@@ -864,13 +864,13 @@
     const sx=player.x+player.w+20, sy=player.y+6;
     const pts=[];
     for(let i=0;i<=spec.segs;i++) pts.push({x:sx,y:sy+i*spec.len,px:sx,py:sy+i*spec.len,pinned:false});
-    ropes.push({word,c:spec.c,segs:spec.segs,segLen:spec.len,g:spec.g,damp:spec.damp,pts});
+    ropes.push({word,c:spec.c,segs:spec.segs,segLen:spec.len,g:spec.g,damp:spec.damp,iters:spec.iters||5,pts});
   }
   function spawnRopeAt(x,y){ // grappling hook landing: rope pinned at the anchor
     const spec=ROPE_WORDS.rope;
     const pts=[];
     for(let i=0;i<=spec.segs;i++) pts.push({x,y:y+i*spec.len,px:x,py:y+i*spec.len,pinned:i===0});
-    ropes.push({word:'rope',c:spec.c,segs:spec.segs,segLen:spec.len,g:spec.g,damp:spec.damp,pts});
+    ropes.push({word:'rope',c:spec.c,segs:spec.segs,segLen:spec.len,g:spec.g,damp:spec.damp,iters:spec.iters||5,pts});
   }
   function ptInSolid(p,s,pad=2){ return p.x>s.x-pad && p.x<s.x+s.w+pad && p.y>s.y-pad && p.y<s.y+s.h+pad; }
   function closestOnRect(x,y,s){
@@ -928,13 +928,16 @@
           if(p.x>s.x-2 && p.x<s.x+s.w+2 && p.y<=s.y+2 && p.y>=s.y-6){ supported=true; break; }
         }
         if(supported) vx*=0.15;
+        // clamp runaway velocity so spans can't yank the strand longer than it is
+        const spd=Math.hypot(vx,vy);
+        if(spd>24){ vx*=24/spd; vy*=24/spd; }
         p.px=p.x; p.py=p.y;
         p.x+=vx; p.y+=vy+g+((riding && i>=grabbed.idx)?g*0.85:0);
         if(riding && i>=grabbed.idx && (keys['ArrowLeft']||keys['KeyA']||keys['ArrowRight']||keys['KeyD'])){
           p.x+=((keys['ArrowRight']||keys['KeyD'])?1:-1)*340*dt; // pump the swing
         }
       }
-      for(let k=0;k<5;k++){
+      for(let k=0;k<(r.iters||5);k++){
         for(let i=0;i<r.pts.length-1;i++){
           const a=r.pts[i], b=r.pts[i+1];
           let dx=b.x-a.x, dy=b.y-a.y;
@@ -1054,6 +1057,7 @@
     A.pts=Aseq.concat(Bseq);
     A.pts.forEach(p=>{p.px=p.x;p.py=p.y;});
     A.segLen=(A.segLen+B.segLen)/2;
+    A.iters=Math.max(A.iters||5,B.iters||5);
     ropes.splice(ropes.indexOf(B),1);
     if(grabbed.rope===B){ grabbed.rope=A; grabbed.idx=Alen+((bEnd==='first')?grabbed.idx:(Blen-1-grabbed.idx)); }
     else if(grabbed.rope===A && aEnd==='first'){ grabbed.idx=Alen-1-grabbed.idx; }
@@ -1160,6 +1164,20 @@
     if(s.b==='float') return false;
     return s.resting; // only shove settled objects — falling ones are hands-off
   }
+  // shove a settled summon, cascading into touching summons Sokoban-style
+  // (depth-capped). Static world geometry still stops everything — no engine needed.
+  function shove(s,dx,depth){
+    if(depth>6) return false;
+    const step=dx*(s.b==='heavy'?0.45:1);
+    const probe={x:s.x+step,y:s.y,w:s.w,h:s.h};
+    for(const o of solids){ if(Engine.overlap(probe,o)) return false; }
+    for(const q of summons){
+      if(q===s || !Engine.overlap(probe,q)) continue;
+      if(!pushable(q)) return false;
+      if(!shove(q,dx,depth+1)) return false;
+    }
+    s.x+=step; return true;
+  }
   function tryPush(dx){
     if(!dx) return;
     for(const s of summons){
@@ -1168,13 +1186,7 @@
         ? (player.x+player.w<=s.x+6 && player.x+player.w+Math.abs(dx)+3>=s.x && player.y+player.h>s.y+8 && player.y<s.y+s.h-4)
         : (player.x>=s.x+s.w-6 && player.x-Math.abs(dx)-3<=s.x+s.w && player.y+player.h>s.y+8 && player.y<s.y+s.h-4);
       if(!touching) continue;
-      const step=dx*(s.b==='heavy'?0.45:1);
-      const probe={x:s.x+step,y:s.y,w:s.w,h:s.h};
-      let blocked=false;
-      for(const o of solids.concat(summons.filter(q=>q!==s))){
-        if(Engine.overlap(probe,o)){ blocked=true; break; }
-      }
-      if(!blocked) s.x+=step;
+      shove(s,dx,0);
     }
   }
 
@@ -1203,6 +1215,7 @@
   function updateSummons(dt){
     stepRopes(dt);
     for(const s of summons){
+      if(s.cool>0) s.cool-=dt;
       if(s.grace>0){ s.grace-=dt; if(s.grace<=0&&s.b==='float') s.resting=false; } // boarding pause over: liftoff even if settled
       if(s.b==='hook' && !s.resting){
         if(s.aiming){ // held at hand, waiting for aim
@@ -1297,10 +1310,10 @@
       player.y+=((keys['KeyS']||keys['ArrowDown'])?1:-1)*170*dt;
       player.vy=0;
     }
-    // bouncy: landing on ball/cushion trampolines the player
+    // bouncy: landing on ball/cushion trampolines the player (cooldown stops machine-gun puffs)
     if(player.onGround){
-      const tramp=summons.find(s=>s.b==='bouncy' && standingOn(player,s));
-      if(tramp){ player.vy=-680; player.onGround=false;
+      const tramp=summons.find(s=>s.b==='bouncy' && standingOn(player,s) && !(s.cool>0));
+      if(tramp){ player.vy=-680; player.onGround=false; tramp.cool=0.3;
         for(let i=0;i<10;i++) fx.push({x:player.x+Math.random()*player.w,y:player.y+player.h,vx:(Math.random()-.5)*160,vy:-Math.random()*160,life:.5});
       }
     }
@@ -1415,10 +1428,12 @@
       ctx.fillStyle='#2e3a68'; ctx.font='12px Georgia'; ctx.fillText(r.word+' ➰',mid.x+8,mid.y);
     }
     // E hint near rope (carry/tie a loose end, or grab hold to ride)
+    // while riding there was NO hint — now Space/E are labeled in-world
     if(!won){
       const c=playerCenter();
       let hx=null,label='';
       if(carried.rope){ const h=handPos(); hx=h; label='E: tie / drop'; }
+      else if(grabbed.rope){ const pt=grabbed.rope.pts[grabbed.idx]; hx={x:pt.x,y:pt.y-6}; label='Space: let go · E: tie off'; }
       else if(!grabbed.rope){
         const e=nearestLooseEnd(c,64);
         if(e){ const p=e.rope.pts[e.endIdx]; hx=p; label=findTieTarget(e,p)?'E: tie':'E: carry'; }

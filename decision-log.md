@@ -336,6 +336,17 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     summon-anything realization lands before examples do. One-time only
     (`wort_trials` flag); replays go straight to the errand briefing.
 
+52. **Rope + push fixes.** Chain goes 8→12 segments at 16px (192px,
+    was 112px) with 9 solver passes vs 5 so it reads stiff/heavy;
+    per-point velocity clamp stops spans yanking strands longer than
+    they are; knotted ropes keep the stiffer pass count. Trampolines get
+    a 0.3s per-object cooldown — chained landing bursts were machine-
+    gunning puffs (the reported "sparking"). Riding a strand now shows
+    its controls in-world (`Space: let go · E: tie off`) since there was
+    no hint at all. Pushing cascades: shoving into a touching row moves
+    the row (depth-capped, heavies slow, world geometry still stops
+    all) — no physics engine required.
+
 48. **Guide marker only on real targets.** The pulsing ▼ ring also drew
     on move/jump/conjure steps at an empty point beside the player,
     where it read as a stray artifact. Now it only appears over actual
