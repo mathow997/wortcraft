@@ -197,8 +197,6 @@
     return {w,h:hh,c:palette[hsh%palette.length],b:'static',wild:true};
   }
   function stopLoop(){ running=false; cancelAnimationFrame(raf); }
-
-  function stopLoop(){ running=false; cancelAnimationFrame(raf); }
   // ---- creature drawing ----
   function drawGoat(n){
     const bob=n.calmed?0:Math.sin((n.bob||0)*6)*2;
@@ -942,7 +940,7 @@
         else if(m===dyt) p.y=s.y-3; else p.y=s.y+s.h+3;
         p.px=p.x; p.py=p.y;
       }
-      p.x=Math.max(4,Math.min(1916,p.x));
+      p.x=Math.max(4,Math.min(world.w-4,p.x));
     }
   }
   function anchorTop(r,bodies){

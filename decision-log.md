@@ -398,3 +398,13 @@ reference alongside `design-doc.md` and `tech-spec.md`.
     sprites; quick icons, hand-held minis, and `E/U` behavior inherited
     automatically. Witch-trial hints will escalate vague→specific so the
     any-thing realization lands first.
+
+57. **Test pass: trials / hint chip / chain / cascade + rope-bound fix.**
+    Verified (1) Replay-trials flow (animal list → climb|float|rope →
+    any-word delight, validation gated on dialogue close), (2) hint chip
+    hedging + 20s no-conjure stuck pulse, trial chip 30s stall pulse,
+    (3) chain 12×16px/9 passes vs rope 12×14px/5 + velocity clamp +
+    stiff-knot merge, (4) Sokoban cascade (depth 6, heavies 0.45×,
+    geometry stops all). Fixed: rope X-clamp was hardcoded 1916 so
+    strands snapped back west of the ravine — now `world.w-4`; removed
+    duplicate `stopLoop`. Bumped cache to `?v=17`.
